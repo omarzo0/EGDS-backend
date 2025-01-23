@@ -1,0 +1,29 @@
+├── models/
+│   ├── Citizens/
+│   │   └── Citizen.js
+│   ├── Documents/
+│   │   └── Document.js
+│   ├── Civil_Status/
+│   │   └── CivilStatus.js
+│   ├── Document_Applications/
+│   │   └── DocumentApplication.js
+│   ├── Users/
+│   │   └── User.js
+│   ├── Logs/
+│   │   └── Log.js
+│   ├── Offices/
+│   │   └── Office.js
+│   ├── Appointments/
+│   │   └── Appointment.js
+│   ├── Fees/
+│   │   └── Fee.js
+│   ├── Payments/
+│   │   └── Payment.js
+│   ├── Notifications/
+│   │   └── Notification.js
+│   └── Archives/
+│       └── Archive.js
+│
+├── models/
+│   └── init.js
+│
