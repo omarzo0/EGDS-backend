@@ -20,6 +20,8 @@ const documentSchema = new mongoose.Schema({
     enum: ["Issued", "Pending", "Revoked", "Expired"],
     required: true,
   },
+  document_file: { type: String },
+
   citizen_id: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Citizen",
