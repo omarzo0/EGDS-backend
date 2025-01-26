@@ -6,12 +6,12 @@
 - [x] documents application
 - [x] middleware
 - [x] log details
+- [x] payment
 
 <details>
 <summary>Click to View More</summary>
 <ul>
 <li>notification part</li>
-<li>payment part</li>
 <li>fees part</li>
 <li>archive part</li>
 <li>Appointment part</li>
