@@ -4,9 +4,11 @@ const {
   processPayment,
   getAllPayments,
   getPaymentById,
+  processInstallmentPayment,
 } = require("../Controller/payment");
 
 router.post("/process", processPayment);
+router.post("/installment", processInstallmentPayment);
 
 router.get("/", getAllPayments);
 

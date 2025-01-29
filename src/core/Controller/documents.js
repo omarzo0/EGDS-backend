@@ -1,4 +1,5 @@
 const Document = require("../../database/models/Document");
+const moment = require("moment");
 
 // Create a new document
 const createDocument = async (req, res) => {
@@ -6,12 +7,18 @@ const createDocument = async (req, res) => {
     const { document_type, issue_date, expiry_date, status, citizen_id } =
       req.body;
 
+    if (!req.file) {
+      return res.status(400).json({ error: "Document file is required" });
+    }
+
     const newDocument = new Document({
       document_type,
       issue_date,
       expiry_date,
       status,
       citizen_id,
+      document_file: req.file.path,
+      file_type: req.file.mimetype.split("/")[1],
     });
 
     const savedDocument = await newDocument.save();
@@ -52,13 +59,50 @@ const getDocumentById = async (req, res) => {
   }
 };
 
+// Send renewal reminders
+const sendRenewalReminders = async (req, res) => {
+  try {
+    const today = moment().startOf("day");
+    const upcomingExpirations = await Document.find({
+      expiry_date: {
+        $exists: true,
+        $lte: moment(today).add(7, "days").toDate(),
+      },
+      renewal_reminder_sent: false,
+    }).populate("citizen_id", "first_name last_name email");
+
+    const reminders = [];
+
+    for (const doc of upcomingExpirations) {
+      // Notify user (e.g., send email - mocked here)
+      reminders.push({
+        citizen: doc.citizen_id,
+        document_type: doc.document_type,
+        expiry_date: doc.expiry_date,
+      });
+
+      // Mark reminder as sent
+      await Document.findByIdAndUpdate(doc._id, {
+        renewal_reminder_sent: true,
+      });
+    }
+
+    res.status(200).json({ message: "Renewal reminders sent", reminders });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
 // Update a document by ID
 const updateDocumentById = async (req, res) => {
   try {
     const updatedDocument = await Document.findByIdAndUpdate(
       req.params.id,
       req.body,
-      { new: true, runValidators: true }
+      {
+        new: true,
+        runValidators: true,
+      }
     );
 
     if (!updatedDocument) {
@@ -90,6 +134,7 @@ module.exports = {
   createDocument,
   getAllDocuments,
   getDocumentById,
+  sendRenewalReminders,
   updateDocumentById,
   deleteDocumentById,
 };
