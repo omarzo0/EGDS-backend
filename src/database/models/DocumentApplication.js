@@ -26,6 +26,8 @@ const documentApplicationSchema = new mongoose.Schema({
     required: true,
   },
   rejection_reason: { type: String },
+  amount: { type: Number, required: true },
+  currency: { type: String, required: true },
 });
 
 const DocumentApplication = mongoose.model(

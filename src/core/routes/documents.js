@@ -6,11 +6,11 @@ const {
   updateDocumentById,
   deleteDocumentById,
 } = require("../Controller/documents");
+const upload = require("../../middleware/uploadConfig");
 
 const router = express.Router();
 
-// Define routes
-router.post("/", createDocument);
+router.post("/", upload.single("document_file"), createDocument);
 router.get("/", getAllDocuments);
 router.get("/:id", getDocumentById);
 router.put("/:id", updateDocumentById);
