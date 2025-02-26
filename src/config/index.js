@@ -4,7 +4,7 @@ const { join } = require("node:path");
 
 const Dirs = ["uploads"];
 
-function CreateProDir() {
+function CreateDir() {
   for (const dir of Dirs) {
     const path = join(__dirname, "..", "..", dir);
     if (existsSync(path)) continue;
@@ -14,7 +14,7 @@ function CreateProDir() {
 
 function initConfig() {
   config();
-  CreateProDir;
+  CreateDir;
 }
 
 const Config = {

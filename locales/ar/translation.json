@@ -1,11 +1,11 @@
 {
-  "message": {},
+  "message": { "somethingWentWrong": "حدث خطأ ما." },
   "validation": {},
   "error": {
     "invalidLanguage": "اللغة غير مدعومة.",
     "unauthorized": "الوصول غير المصرح به.",
     "invalidAccessToken": "رمز الوصول غير صالح.",
     "pleaseTryAgain": "يرجى المحاولة مرة أخرى.",
-    "somethingWentWrong": "حدث خطأ ما."
+    "endPointNotFound": "نقطة النهاية غير موجودة."
   }
 }

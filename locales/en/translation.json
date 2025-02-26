@@ -1,11 +1,14 @@
 {
-  "message": {},
+  "message": {
+    "somethingWentWrong": "Something went wrong."
+  },
   "validation": {},
   "error": {
     "invalidLanguage": "Unsupported language.",
     "unauthorized": "Unauthorized access.",
     "invalidAccessToken": "Invalid access token.",
     "pleaseTryAgain": "Please try again.",
-    "somethingWentWrong": "Something went wrong."
+
+    "endPointNotFound": "End point not found."
   }
 }

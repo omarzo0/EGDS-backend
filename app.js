@@ -1,5 +1,8 @@
 const express = require("express");
 const bodyParser = require("body-parser");
+const { initConfig, Config } = require("./src/config");
+const _404Middleware = require("./src/middleware/404");
+const errorMiddleware = require("./src/middleware/error");
 const citizenRoutes = require("./src/core/routes/citizen");
 const documentRoutes = require("./src/core/routes/documents");
 const documentApplicationRoutes = require("./src/core/routes/documentApplication");
@@ -30,20 +33,28 @@ function initMiddlewares(app) {
 }
 
 function initServer() {
-  // server
-  const app = express();
-  // db
-  // middlewares
-  initMiddlewares(app);
-  // config
+  // Config
   initConfig();
-  // routes
+
+  // Server
+  const app = express();
+
+  // DB
+
+  // Middlewares
+  initMiddlewares(app);
+
+  // Routes
   initRoutes(app);
+
   // 404
-  // error
+  _404Middleware(app);
+
+  // Error
+  errorMiddleware(app);
 
   // Start the server
-  const PORT = process.env.PORT || 5000;
+  const PORT = Config.PORT || 3000;
   app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
   });

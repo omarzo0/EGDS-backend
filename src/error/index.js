@@ -68,8 +68,8 @@ class ApiError extends Error {
     return new ApiError("pleaseTryAgain", HttpStatus.BadRequest);
   }
 
-  static somethingWentWrong() {
-    return new ApiError("somethingWentWrong", HttpStatus.InternalServerError);
+  static endPointNotFound() {
+    return new ApiError("endPointNotFound", HttpStatus.NotFound);
   }
 }
 
