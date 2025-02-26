@@ -1,22 +1,25 @@
 const mongoose = require("mongoose");
 const bcrypt = require("bcryptjs");
 
-const citizenSchema = new mongoose.Schema({
-  first_name: { type: String, required: true },
-  last_name: { type: String, required: true },
-  date_of_birth: { type: Date, required: true },
-  gender: { type: String, enum: ["Male", "Female", "Other"], required: true },
-  national_id: { type: String, unique: true, required: true },
-  address: { type: String, required: true },
-  phone_number: { type: String },
-  email: { type: String, unique: true, required: true },
-  marital_status: {
-    type: String,
-    enum: ["Single", "Married", "Divorced", "Widowed"],
-    required: true,
+const citizenSchema = new mongoose.Schema(
+  {
+    first_name: { type: String, required: true },
+    last_name: { type: String, required: true },
+    date_of_birth: { type: Date, required: true },
+    gender: { type: String, enum: ["Male", "Female", "Other"], required: true },
+    national_id: { type: String, unique: true, required: true },
+    address: { type: String, required: true },
+    phone_number: { type: String },
+    email: { type: String, unique: true, required: true },
+    marital_status: {
+      type: String,
+      enum: ["Single", "Married", "Divorced", "Widowed"],
+      required: true,
+    },
+    password: { type: String, required: true },
   },
-  password: { type: String, required: true },
-});
+  { timestamps: true }
+);
 
 citizenSchema.pre("save", async function (next) {
   if (!this.isModified("password")) return next();
@@ -30,6 +33,6 @@ citizenSchema.methods.matchPassword = async function (enteredPassword) {
   return await bcrypt.compare(enteredPassword, this.password);
 };
 
-const Citizen = mongoose.model("Citizen", citizenSchema);
+const CitizenModel = mongoose.model("Citizen", citizenSchema);
 
-module.exports = Citizen;
+module.exports = { CitizenModel };

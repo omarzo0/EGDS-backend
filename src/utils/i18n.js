@@ -11,7 +11,6 @@ i18next.use(Backend).init({
       __dirname,
       "..",
       "..",
-      "..",
       "locales",
       "{{lng}}",
       "{{ns}}.json"

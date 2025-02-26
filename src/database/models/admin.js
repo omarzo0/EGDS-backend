@@ -2,19 +2,21 @@ const mongoose = require("mongoose");
 const bcrypt = require("bcryptjs");
 
 // Admin Schema
-const adminSchema = new mongoose.Schema({
-  first_name: { type: String, required: true },
-  last_name: { type: String, required: true },
-  email: { type: String, required: true, unique: true },
-  password: { type: String, required: true },
-  role: {
-    type: String,
-    enum: ["super admin", "admin", "employee"],
-    default: "employee",
-    required: true,
+const adminSchema = new mongoose.Schema(
+  {
+    first_name: { type: String, required: true },
+    last_name: { type: String, required: true },
+    email: { type: String, required: true, unique: true, lowercase: true },
+    password: { type: String, required: true },
+    role: {
+      type: String,
+      enum: ["super admin", "admin", "employee"],
+      default: "employee",
+      required: true,
+    },
   },
-  date_created: { type: Date, default: Date.now },
-});
+  { timestamps: true }
+);
 
 // Password Hashing Before Saving
 adminSchema.pre("save", async function (next) {
@@ -30,6 +32,6 @@ adminSchema.methods.matchPassword = async function (enteredPassword) {
   return await bcrypt.compare(enteredPassword, this.password);
 };
 
-const Admin = mongoose.model("Admin", adminSchema);
+const AdminModel = mongoose.model("Admin", adminSchema);
 
-module.exports = Admin;
+module.exports = { AdminModel };

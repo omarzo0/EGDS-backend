@@ -18,6 +18,6 @@ const eSignatureSchema = new mongoose.Schema({
   signed_date: { type: Date },
 });
 
-const eSignature = mongoose.model("eSignature", eSignatureSchema);
+const eSignatureModel = mongoose.model("eSignature", eSignatureSchema);
 
-module.exports = eSignature;
+module.exports = { eSignatureModel };

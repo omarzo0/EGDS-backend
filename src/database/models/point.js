@@ -27,5 +27,5 @@ const greenPointSchema = new mongoose.Schema({
   ],
 });
 
-const GreenPoint = mongoose.model("GreenPoint", greenPointSchema);
-module.exports = GreenPoint;
+const GreenPointModel = mongoose.model("GreenPoint", greenPointSchema);
+module.exports = { GreenPointModel };
