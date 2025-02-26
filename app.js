@@ -11,32 +11,42 @@ const eSignatureRoutes = require("./src/core/routes/eSignature");
 const feedbackRoutes = require("./src/core/routes/feedback");
 const archiveRoutes = require("./src/core/routes/archive");
 
-const connectDB = require("../EGDS-backend/src/config/db");
-require("dotenv").config();
+function initRoutes(app) {
+  app.use("/api/citizens", citizenRoutes);
+  app.use("/api/documents", documentRoutes);
+  app.use("/api/document-applications", documentApplicationRoutes);
+  app.use("/api/admin", adminRoutes);
+  app.use("/api/logs", logRoutes);
+  app.use("/api/payments", paymentRoutes);
+  app.use("/api/notifications", notificationRoutes);
+  app.use("/api/eSignature", eSignatureRoutes);
+  app.use("/api/feedback", feedbackRoutes);
+  app.use("/api/archive", archiveRoutes);
+}
 
-const app = express();
+function initMiddlewares(app) {
+  app.use(bodyParser.json());
+  app.use(express.json());
+}
 
-// Middleware
-app.use(bodyParser.json());
-app.use(express.json());
+function initServer() {
+  // server
+  const app = express();
+  // db
+  // middlewares
+  initMiddlewares(app);
+  // config
+  initConfig();
+  // routes
+  initRoutes(app);
+  // 404
+  // error
 
-// Connect to MongoDB
-connectDB();
+  // Start the server
+  const PORT = process.env.PORT || 5000;
+  app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+  });
+}
 
-// Routes
-app.use("/api/citizens", citizenRoutes);
-app.use("/api/documents", documentRoutes);
-app.use("/api/document-applications", documentApplicationRoutes);
-app.use("/api/admin", adminRoutes);
-app.use("/api/logs", logRoutes);
-app.use("/api/payments", paymentRoutes);
-app.use("/api/notifications", notificationRoutes);
-app.use("/api/eSignature", eSignatureRoutes);
-app.use("/api/feedback", feedbackRoutes);
-app.use("/api/archive", archiveRoutes);
-
-// Start the server
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+initServer();

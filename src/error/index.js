@@ -1,6 +1,6 @@
-import i18next from "../utils/i18n";
+const i18next = require("../utils/i18n");
 
-export const HttpStatus = {
+const HttpStatus = {
   Ok: 200,
   Created: 201,
   Accepted: 202,
@@ -44,7 +44,7 @@ export const HttpStatus = {
   HTTPVersionNotSupported: 505,
 };
 
-export class ApiError extends Error {
+class ApiError extends Error {
   constructor(key, code = HttpStatus.InternalServerError) {
     const message = i18next.t(`error.${key}`);
     super(message.toString());
@@ -72,3 +72,8 @@ export class ApiError extends Error {
     return new ApiError("somethingWentWrong", HttpStatus.InternalServerError);
   }
 }
+
+module.exports = {
+  HttpStatus,
+  ApiError,
+};
