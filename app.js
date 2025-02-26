@@ -1,6 +1,6 @@
 const express = require("express");
-const bodyParser = require("body-parser");
 const { initConfig, Config } = require("./src/config");
+const { initDB } = require("./src/database/init");
 const _404Middleware = require("./src/middleware/404");
 const errorMiddleware = require("./src/middleware/error");
 const citizenRoutes = require("./src/core/routes/citizen");
@@ -28,7 +28,6 @@ function initRoutes(app) {
 }
 
 function initMiddlewares(app) {
-  app.use(bodyParser.json());
   app.use(express.json());
 }
 
@@ -40,6 +39,7 @@ function initServer() {
   const app = express();
 
   // DB
+  initDB();
 
   // Middlewares
   initMiddlewares(app);
