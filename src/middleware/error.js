@@ -16,4 +16,4 @@ function errorMiddleware(app) {
   app.use(errorHandler);
 }
 
-module.exports = errorMiddleware;
+module.exports = { errorMiddleware };

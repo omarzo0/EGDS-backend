@@ -6,4 +6,4 @@ function _404Middleware(app) {
   });
 }
 
-module.exports = _404Middleware;
+module.exports = { _404Middleware };

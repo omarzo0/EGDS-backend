@@ -1,8 +1,8 @@
 const express = require("express");
 const { initConfig, Config } = require("./src/config");
 const { initDB } = require("./src/database/init");
-const _404Middleware = require("./src/middleware/404");
-const errorMiddleware = require("./src/middleware/error");
+const { _404Middleware } = require("./src/middleware/404");
+const { errorMiddleware } = require("./src/middleware/error");
 const citizenRoutes = require("./src/core/routes/citizen");
 const documentRoutes = require("./src/core/routes/documents");
 const documentApplicationRoutes = require("./src/core/routes/documentApplication");
@@ -31,7 +31,7 @@ function initMiddlewares(app) {
   app.use(express.json());
 }
 
-function initServer() {
+async function initServer() {
   // Config
   initConfig();
 
@@ -39,7 +39,7 @@ function initServer() {
   const app = express();
 
   // DB
-  initDB();
+  await initDB();
 
   // Middlewares
   initMiddlewares(app);

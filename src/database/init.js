@@ -5,4 +5,4 @@ async function initDB() {
   await mongoose.connect(Config.MONGODB_URI);
 }
 
-module.exports = initDB;
+module.exports = { initDB };

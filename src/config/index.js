@@ -1,4 +1,5 @@
 const { config } = require("dotenv");
+config();
 const { existsSync, mkdirSync } = require("node:fs");
 const { join } = require("node:path");
 
@@ -13,8 +14,7 @@ function CreateDir() {
 }
 
 function initConfig() {
-  config();
-  CreateDir;
+  CreateDir();
 }
 
 const Config = {
