@@ -14,6 +14,11 @@ const adminSchema = new mongoose.Schema(
       default: "employee",
       required: true,
     },
+    languagePreference: {
+      type: String,
+      enum: ["en", "ar"],
+      default: "en",
+    },
   },
   { timestamps: true }
 );

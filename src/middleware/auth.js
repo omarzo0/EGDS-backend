@@ -18,8 +18,16 @@ async function adminIsAuth(req, res, next) {
 
     const adminId = verifyToken(splitHeader[1], Config.JWT_ADMIN_SECRET);
 
+    const admin = await AdminModel.findById(req.adminId.toString()).select(
+      "-password"
+    );
+    if (!admin) {
+      throw ApiError.invalidAccessToken();
+    }
+
     req.adminId = adminId.toString();
-    req.admin = await AdminModel.findById(req.adminId).select("-password");
+    req.admin = admin;
+    req.language = req.admin.languagePreference || "en";
 
     next();
   } catch (err) {
@@ -41,10 +49,16 @@ async function citizenIsAuth(req, res, next) {
 
     const citizenId = verifyToken(splitHeader[1], Config.JWT_CITIZEN_SECRET);
 
+    const citizen = await CitizenModel.findById(
+      req.citizenId.toString()
+    ).select("-password");
+    if (!citizen) {
+      throw ApiError.invalidAccessToken();
+    }
+
     req.citizenId = citizenId.toString();
-    req.citizen = await CitizenModel.findById(req.citizenId).select(
-      "-password"
-    );
+    req.citizen = citizen;
+    req.language = req.citizen.languagePreference || "en";
 
     next();
   } catch (err) {

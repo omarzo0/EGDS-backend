@@ -17,6 +17,11 @@ const citizenSchema = new mongoose.Schema(
       required: true,
     },
     password: { type: String, required: true },
+    languagePreference: {
+      type: String,
+      enum: ["en", "ar"],
+      default: "en",
+    },
   },
   { timestamps: true }
 );
