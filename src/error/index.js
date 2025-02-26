@@ -1,4 +1,4 @@
-const i18next = require("../utils/i18n");
+const { i18next } = require("../utils/i18n");
 
 const HttpStatus = {
   Ok: 200,
@@ -70,6 +70,10 @@ class ApiError extends Error {
 
   static endPointNotFound() {
     return new ApiError("endPointNotFound", HttpStatus.NotFound);
+  }
+
+  static invalidEmailCredentials() {
+    return new ApiError("invalidEmailCredentials", HttpStatus.BadRequest);
   }
 }
 

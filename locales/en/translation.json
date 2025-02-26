@@ -8,7 +8,7 @@
     "unauthorized": "Unauthorized access.",
     "invalidAccessToken": "Invalid access token.",
     "pleaseTryAgain": "Please try again.",
-
-    "endPointNotFound": "End point not found."
+    "endPointNotFound": "End point not found.",
+    "invalidEmailCredentials": "Invalid email or password."
   }
 }
