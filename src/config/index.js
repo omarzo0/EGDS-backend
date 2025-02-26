@@ -20,6 +20,8 @@ function initConfig() {
 const Config = {
   PORT: process.env["PORT"],
   MONGODB_URI: process.env["MONGODB_URI"],
+  JWT_ADMIN_SECRET: process.env["JWT_ADMIN_SECRET"],
+  JWT_CITIZEN_SECRET: process.env["JWT_CITIZEN_SECRET"],
 };
 
 module.exports = {

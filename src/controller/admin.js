@@ -60,17 +60,4 @@ const loginAdmin = async (req, res) => {
   }
 };
 
-// Middleware for Admin Role Verification
-const protect = (roles) => {
-  return (req, res, next) => {
-    const { role } = req.user; // Retrieved from the JWT token payload
-
-    if (!roles.includes(role)) {
-      return res.status(403).json({ message: "Permission denied" });
-    }
-
-    next();
-  };
-};
-
-module.exports = { registerAdmin, loginAdmin, protect };
+module.exports = { registerAdmin, loginAdmin };

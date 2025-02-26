@@ -1,8 +1,8 @@
-const Payment = require("../../database/models/Payment");
-const Citizen = require("../../database/models/Citizen");
-const InstallmentPayment = require("../../database/models/InstallmentPayment");
+const Payment = require("../database/models/Payment");
+const Citizen = require("../database/models/Citizen");
+const InstallmentPayment = require("../database/models/InstallmentPayment");
 const stripe = require("stripe");
-const GreenPoint = require("../../database/models/point");
+const GreenPoint = require("../database/models/point");
 
 // Process Full Payment
 exports.processPayment = async (req, res) => {

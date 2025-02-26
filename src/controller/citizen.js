@@ -1,4 +1,4 @@
-const Citizen = require("../../database/models/Citizen");
+const { CitizenModel } = require("../database/models/citizen");
 
 // Create a new citizen
 const createCitizen = async (req, res) => {

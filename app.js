@@ -3,16 +3,16 @@ const { initConfig, Config } = require("./src/config");
 const { initDB } = require("./src/database/init");
 const { _404Middleware } = require("./src/middleware/404");
 const { errorMiddleware } = require("./src/middleware/error");
-const citizenRoutes = require("./src/core/routes/citizen");
-const documentRoutes = require("./src/core/routes/documents");
-const documentApplicationRoutes = require("./src/core/routes/documentApplication");
-const adminRoutes = require("./src/core/routes/admin");
-const logRoutes = require("./src/core/routes/log");
-const paymentRoutes = require("./src/core/routes/payment");
-const notificationRoutes = require("./src/core/routes/notification");
-const eSignatureRoutes = require("./src/core/routes/eSignature");
-const feedbackRoutes = require("./src/core/routes/feedback");
-const archiveRoutes = require("./src/core/routes/archive");
+const citizenRoutes = require("./src/routes/citizen");
+const documentRoutes = require("./src/routes/documents");
+const documentApplicationRoutes = require("./src/routes/documentApplication");
+const adminRoutes = require("./src/routes/admin");
+const logRoutes = require("./src/routes/log");
+const paymentRoutes = require("./src/routes/payment");
+const notificationRoutes = require("./src/routes/notification");
+const eSignatureRoutes = require("./src/routes/eSignature");
+const feedbackRoutes = require("./src/routes/feedback");
+const archiveRoutes = require("./src/routes/archive");
 
 function initRoutes(app) {
   app.use("/api/citizens", citizenRoutes);
