@@ -2,7 +2,17 @@
   "message": {
     "somethingWentWrong": "Something went wrong."
   },
-  "validation": {},
+  "validation": {
+    "email": {
+      "required": "Email is required.",
+      "invalid": "Invalid email."
+    },
+    "password": {
+      "required": "Password is required.",
+      "minLength": "Password must be at least 6 characters long.",
+      "maxLength": "Password must be at most 30 characters long."
+    }
+  },
   "error": {
     "invalidLanguage": "Unsupported language.",
     "unauthorized": "Unauthorized access.",

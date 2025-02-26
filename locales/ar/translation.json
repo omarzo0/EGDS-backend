@@ -1,6 +1,16 @@
 {
   "message": { "somethingWentWrong": "حدث خطأ ما." },
-  "validation": {},
+  "validation": {
+    "email": {
+      "required": "البريد الإلكتروني مطلوب.",
+      "invalid": "البريد الإلكتروني غير صالح."
+    },
+    "password": {
+      "required": "كلمة المرور مطلوبة.",
+      "minLength": "يجب أن تتكون كلمة المرور من 6 أحرف على الأقل.",
+      "maxLength": "يجب أن تتكون كلمة المرور من 30 حرفًا كحد أقصى."
+    }
+  },
   "error": {
     "invalidLanguage": "اللغة غير مدعومة.",
     "unauthorized": "الوصول غير المصرح به.",
