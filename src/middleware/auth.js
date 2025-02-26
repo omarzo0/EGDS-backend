@@ -1,4 +1,4 @@
-const ApiError = require("../utils/ApiError");
+const { ApiError } = require("../error/index");
 const { verifyToken } = require("../utils/token");
 const { Config } = require("../config/index");
 const { AdminModel } = require("../database/models/admin");

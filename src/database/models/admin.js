@@ -1,6 +1,12 @@
 const mongoose = require("mongoose");
 const bcrypt = require("bcryptjs");
 
+const AdminRole = {
+  SUPER_ADMIN: "super admin",
+  ADMIN: "admin",
+  OFFICER: "officer",
+};
+
 // Admin Schema
 const adminSchema = new mongoose.Schema(
   {
@@ -10,8 +16,7 @@ const adminSchema = new mongoose.Schema(
     password: { type: String, required: true },
     role: {
       type: String,
-      enum: ["super admin", "admin", "employee"],
-      default: "employee",
+      enum: [AdminRole.SUPER_ADMIN, AdminRole.ADMIN, AdminRole.OFFICER],
       required: true,
     },
     languagePreference: {
@@ -39,4 +44,4 @@ adminSchema.methods.matchPassword = async function (enteredPassword) {
 
 const AdminModel = mongoose.model("Admin", adminSchema);
 
-module.exports = { AdminModel };
+module.exports = { AdminModel, AdminRole };
