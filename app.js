@@ -7,23 +7,35 @@ const authRoutes = require("./src/routes/admin/auth");
 const adminRoutes = require("./src/routes/admin/admin");
 const citizenRoutes = require("./src/routes/admin/citizen");
 const documentRoutes = require("./src/routes/admin/document");
-const eSignatureRoutes = require("./src/routes/admin/eSignature");
+const eSignatureRoutes = require("./src/routes/admin/esignature");
 const feedbackRoutes = require("./src/routes/admin/feedback");
 const logRoutes = require("./src/routes/admin/log");
 const pointRoutes = require("./src/routes/admin/point");
+const citizenAuthRoutes = require("./src/routes/citizen/auth");
+const citizenDocumentRoutes = require("./src/routes/citizen/document");
+const citizenEsignatureRoutes = require("./src/routes/citizen/esignature");
+const citizenFeedbackRoutes = require("./src/routes/citizen/feedback");
+const citizenPointsRoutes = require("./src/routes/citizen/points");
+const citizenWalletRoutes = require("./src/routes/citizen/wallet");
 
 function initRoutes(app) {
   // Admin
   app.use("/api/admin", authRoutes);
-  app.use("/api/admin/admin", adminRoutes);
-  app.use("/api/admin/citizen", citizenRoutes);
-  app.use("/api/admin/document", documentRoutes);
-  app.use("/api/admin/signature", eSignatureRoutes);
-  app.use("/api/admin/feedback", feedbackRoutes);
-  app.use("/api/admin/log", logRoutes);
-  app.use("/api/admin/point", pointRoutes);
+  app.use("/api/admin", adminRoutes);
+  app.use("/api/admin", citizenRoutes);
+  app.use("/api/admin", documentRoutes);
+  app.use("/api/admin", eSignatureRoutes);
+  app.use("/api/admin", feedbackRoutes);
+  app.use("/api/admin", logRoutes);
+  app.use("/api/admin", pointRoutes);
 
   // Citizen
+  app.use("/api/citizen", citizenAuthRoutes);
+  app.use("/api/citizen", citizenDocumentRoutes);
+  app.use("/api/citizen", citizenEsignatureRoutes);
+  app.use("/api/citizen", citizenFeedbackRoutes);
+  app.use("/api/citizen", citizenPointsRoutes);
+  app.use("/api/citizen", citizenWalletRoutes);
 
   // Test
   app.get("/api/test", (req, res) => {

@@ -33,9 +33,8 @@ const documentApplicationSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-const DocumentApplicationModel = mongoose.model(
-  "DocumentApplication",
-  documentApplicationSchema
-);
+const DocumentApplicationModel =
+  mongoose.models.DocumentApplication ||
+  mongoose.model("DocumentApplication", documentApplicationSchema);
 
 module.exports = { DocumentApplicationModel };

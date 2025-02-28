@@ -1,7 +1,7 @@
 const express = require("express");
 const multer = require("multer");
 const { changeLanguage } = require("../../middleware/language");
-const { adminAllowedTo, adminIsAuth } = require("../../Middleware/auth");
+const { adminAllowedTo, adminIsAuth } = require("../../middleware/auth");
 const { AdminRole } = require("../../database/models/admin");
 const {
   getAllSignature,
@@ -15,7 +15,7 @@ const router = express.Router();
 const upload = multer({ dest: "uploads/" });
 
 router.get(
-  "/list",
+  "/signature",
   adminIsAuth,
   changeLanguage,
   adminAllowedTo(
@@ -24,7 +24,7 @@ router.get(
   )
 );
 router.get(
-  "/:id/list",
+  "/signature/:id",
   adminIsAuth,
   changeLanguage,
   adminAllowedTo(
@@ -33,7 +33,7 @@ router.get(
   )
 );
 router.post(
-  "/create",
+  "/signature",
   adminIsAuth,
   changeLanguage,
   adminAllowedTo(
@@ -43,7 +43,7 @@ router.post(
   upload.single("document")
 );
 router.put(
-  "/:id/update",
+  "/signature/:id",
   adminIsAuth,
   changeLanguage,
   adminAllowedTo(
@@ -52,7 +52,7 @@ router.put(
   )
 );
 router.delete(
-  "/:id/delete",
+  "/signature/:id",
   adminIsAuth,
   changeLanguage,
   adminAllowedTo(

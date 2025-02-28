@@ -1,13 +1,13 @@
 const express = require("express");
 const { changeLanguage } = require("../../middleware/language");
-const { adminAllowedTo, adminIsAuth } = require("../../Middleware/auth");
+const { adminAllowedTo, adminIsAuth } = require("../../middleware/auth");
 const { AdminRole } = require("../../database/models/admin");
 const { getAllFeedback } = require("../../controller/admin/feedback");
 
 const router = express.Router();
 
 router.get(
-  "/list",
+  "/feedback",
   adminIsAuth,
   changeLanguage,
   adminAllowedTo([AdminRole.SUPER_ADMIN], getAllFeedback)

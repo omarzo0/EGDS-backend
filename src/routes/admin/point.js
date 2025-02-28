@@ -1,6 +1,6 @@
 const express = require("express");
 const { changeLanguage } = require("../../middleware/language");
-const { adminAllowedTo, adminIsAuth } = require("../../Middleware/auth");
+const { adminAllowedTo, adminIsAuth } = require("../../middleware/auth");
 const { AdminRole } = require("../../database/models/admin");
 const {
   getAllPoint,
@@ -12,25 +12,25 @@ const {
 const router = express.Router();
 
 router.get(
-  "/list",
+  "/point",
   adminIsAuth,
   changeLanguage,
   adminAllowedTo([AdminRole.SUPER_ADMIN, AdminRole.ADMIN], getAllPoint)
 );
 router.get(
-  "/:id/list",
+  "/point/:id",
   adminIsAuth,
   changeLanguage,
   adminAllowedTo([AdminRole.SUPER_ADMIN, AdminRole.ADMIN], getPointListById)
 );
 router.put(
-  "/:id/update",
+  "/point/:id",
   adminIsAuth,
   changeLanguage,
   adminAllowedTo([AdminRole.SUPER_ADMIN, AdminRole.ADMIN], updatePoint)
 );
 router.delete(
-  "/:id/delete",
+  "/point/:id",
   adminIsAuth,
   changeLanguage,
   adminAllowedTo([AdminRole.SUPER_ADMIN, AdminRole.ADMIN], deletePoint)

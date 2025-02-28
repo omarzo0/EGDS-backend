@@ -1,6 +1,6 @@
 const express = require("express");
 const { changeLanguage } = require("../../middleware/language");
-const { adminAllowedTo, adminIsAuth } = require("../../Middleware/auth");
+const { adminAllowedTo, adminIsAuth } = require("../../middleware/auth");
 const { AdminRole } = require("../../database/models/admin");
 const {
   getAllCitizen,
@@ -12,25 +12,25 @@ const {
 const router = express.Router();
 
 router.get(
-  "/list",
+  "/citizen",
   adminIsAuth,
   changeLanguage,
   adminAllowedTo([AdminRole.SUPER_ADMIN, AdminRole.ADMIN], getAllCitizen)
 );
 router.post(
-  "/create",
+  "/citizen",
   adminIsAuth,
   changeLanguage,
   adminAllowedTo([AdminRole.SUPER_ADMIN, AdminRole.ADMIN], createCitizen)
 );
 router.put(
-  "/:id/update",
+  "/citizen/:id",
   adminIsAuth,
   changeLanguage,
   adminAllowedTo([AdminRole.SUPER_ADMIN, AdminRole.ADMIN], updateCitizen)
 );
 router.delete(
-  "/:id/delete",
+  "/citizen/:id",
   adminIsAuth,
   changeLanguage,
   adminAllowedTo([AdminRole.SUPER_ADMIN, AdminRole.ADMIN], deleteCitizen)

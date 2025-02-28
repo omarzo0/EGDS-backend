@@ -38,6 +38,7 @@ citizenSchema.methods.matchPassword = async function (enteredPassword) {
   return await bcrypt.compare(enteredPassword, this.password);
 };
 
-const CitizenModel = mongoose.model("Citizen", citizenSchema);
+const CitizenModel =
+  mongoose.models.Citizen || mongoose.model("Citizen", citizenSchema);
 
 module.exports = { CitizenModel };

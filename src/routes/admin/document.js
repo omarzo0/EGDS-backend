@@ -1,6 +1,6 @@
 const express = require("express");
 const { changeLanguage } = require("../../middleware/language");
-const { adminAllowedTo, adminIsAuth } = require("../../Middleware/auth");
+const { adminAllowedTo, adminIsAuth } = require("../../middleware/auth");
 const { AdminRole } = require("../../database/models/admin");
 const {
   getAllDocument,
@@ -14,7 +14,7 @@ const {
 const router = express.Router();
 
 router.get(
-  "/list",
+  "/document",
   adminIsAuth,
   changeLanguage,
   adminAllowedTo(
@@ -23,7 +23,7 @@ router.get(
   )
 );
 router.get(
-  "/:id/list",
+  "/document/:id",
   adminIsAuth,
   changeLanguage,
   adminAllowedTo(
@@ -32,19 +32,19 @@ router.get(
   )
 );
 router.post(
-  "/create",
+  "/document",
   adminIsAuth,
   changeLanguage,
   adminAllowedTo([AdminRole.SUPER_ADMIN, AdminRole.ADMIN], createDocument)
 );
 router.put(
-  "/update",
+  "/document",
   adminIsAuth,
   changeLanguage,
   adminAllowedTo([AdminRole.SUPER_ADMIN, AdminRole.ADMIN], updateAllDocument)
 );
 router.put(
-  "/:id/update",
+  "/document/:id",
   adminIsAuth,
   changeLanguage,
   adminAllowedTo(
@@ -53,7 +53,7 @@ router.put(
   )
 );
 router.delete(
-  "/:id/delete",
+  "/document/:id",
   adminIsAuth,
   changeLanguage,
   adminAllowedTo([AdminRole.SUPER_ADMIN, AdminRole.ADMIN], deleteDocument)

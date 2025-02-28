@@ -40,9 +40,8 @@ const installmentSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-const InstallmentPaymentModel = mongoose.model(
-  "InstallmentPayment",
-  installmentSchema
-);
+const InstallmentPaymentModel =
+  mongoose.models.InstallmentPayment ||
+  mongoose.model("InstallmentPayment", installmentSchema);
 
 module.exports = { InstallmentPaymentModel };

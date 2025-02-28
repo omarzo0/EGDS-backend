@@ -74,6 +74,7 @@ const paymentSchema = new mongoose.Schema(
   }
 );
 
-const PaymentModel = mongoose.model("Payment", paymentSchema);
+const PaymentModel =
+  mongoose.models.Payment || mongoose.model("Payment", paymentSchema);
 
 module.exports = { PaymentModel };
