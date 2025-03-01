@@ -6,8 +6,7 @@ const notificationSchema = new mongoose.Schema({
     ref: "Citizen",
     required: true,
   },
-  title: { type: String, required: true }, // Notification Title
-  body: { type: String, required: true }, // Notification Body
+  title: { type: String, required: true }, 
   sent_date: { type: Date, default: Date.now },
   status: {
     type: String,
