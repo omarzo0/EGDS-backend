@@ -14,6 +14,9 @@ const adminSchema = new mongoose.Schema(
     last_name: { type: String, required: true },
     email: { type: String, required: true, unique: true, lowercase: true },
     password: { type: String, required: true },
+    phone_number: { type: String, required: true, unique: true },
+    national_id: { type: String, required: true, unique: true },
+    age: { type: String, required: true, unique: true },
     role: {
       type: String,
       enum: [AdminRole.SUPER_ADMIN, AdminRole.ADMIN, AdminRole.OFFICER],
