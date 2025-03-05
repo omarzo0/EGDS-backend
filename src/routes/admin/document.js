@@ -5,9 +5,7 @@ const { AdminRole } = require("../../database/models/admin");
 const {
   getAllDocument,
   getDocumentListById,
-  createDocument,
-  updateAllDocument,
-  updateDocument,
+  updateDocumentStatus,
   deleteDocument,
 } = require("../../controller/admin/document");
 
@@ -31,27 +29,14 @@ router.get(
     getDocumentListById
   )
 );
-router.post(
-  "/document",
-  adminIsAuth,
-  changeLanguage,
-  adminAllowedTo([AdminRole.SUPER_ADMIN, AdminRole.ADMIN], createDocument)
-);
-router.put(
-  "/document",
-  adminIsAuth,
-  changeLanguage,
-  adminAllowedTo([AdminRole.SUPER_ADMIN, AdminRole.ADMIN], updateAllDocument)
-);
+
 router.put(
   "/document/:id",
   adminIsAuth,
   changeLanguage,
-  adminAllowedTo(
-    [AdminRole.SUPER_ADMIN, AdminRole.ADMIN, AdminRole.OFFICER],
-    updateDocument
-  )
+  adminAllowedTo([AdminRole.SUPER_ADMIN, AdminRole.ADMIN], updateDocumentStatus)
 );
+
 router.delete(
   "/document/:id",
   adminIsAuth,

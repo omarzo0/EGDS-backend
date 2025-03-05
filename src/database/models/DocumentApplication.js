@@ -7,6 +7,18 @@ const documentApplicationSchema = new mongoose.Schema(
       ref: "Citizen",
       required: true,
     },
+    department_id: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Department",
+      required: true,
+      index: true, // Indexing for performance
+    },
+    service_id: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Service",
+      required: true,
+      index: true,
+    },
     first_name: { type: String, required: true },
     last_name: { type: String, required: true },
     email: { type: String, required: true },
@@ -17,24 +29,13 @@ const documentApplicationSchema = new mongoose.Schema(
       enum: ["Email", "Phone"],
       required: true,
     },
-    document_type: {
-      type: String,
-      enum: [
-        "Birth Certificate",
-        "National ID",
-        "Passport",
-        "Marriage Certificate",
-        "Death Certificate",
-        "Driver's License",
-      ],
-      required: true,
-    },
-    application_date: { type: Date, required: true },
+    application_date: { type: Date, default: Date.now },
     approval_date: { type: Date },
     status: {
       type: String,
       enum: ["Pending", "Approved", "Rejected", "Completed"],
       required: true,
+      default: "Pending",
     },
     rejection_reason: { type: String },
     amount: { type: Number, required: true },
@@ -43,12 +44,8 @@ const documentApplicationSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-const DepartmentModel =
-  mongoose.models.Department || mongoose.model("Department", departmentSchema);
-const ServiceModel =
-  mongoose.models.Service || mongoose.model("Service", serviceSchema);
 const DocumentApplicationModel =
   mongoose.models.DocumentApplication ||
   mongoose.model("DocumentApplication", documentApplicationSchema);
 
-module.exports = { DepartmentModel, ServiceModel, DocumentApplicationModel };
+module.exports = { DocumentApplicationModel };

@@ -7,16 +7,20 @@ const authRoutes = require("./src/routes/admin/auth");
 const adminRoutes = require("./src/routes/admin/admin");
 const citizenRoutes = require("./src/routes/admin/citizen");
 const documentRoutes = require("./src/routes/admin/document");
+const departmentRoutes = require("./src/routes/admin/department");
 const eSignatureRoutes = require("./src/routes/admin/esignature");
 const feedbackRoutes = require("./src/routes/admin/feedback");
+const servicesRoutes = require("./src/routes/admin/services");
 const logRoutes = require("./src/routes/admin/log");
 const pointRoutes = require("./src/routes/admin/point");
 const citizenAuthRoutes = require("./src/routes/citizen/auth");
 const citizenDocumentRoutes = require("./src/routes/citizen/document");
 const citizenEsignatureRoutes = require("./src/routes/citizen/esignature");
 const citizenFeedbackRoutes = require("./src/routes/citizen/feedback");
+const citizenDepartmentRoutes = require("./src/routes/citizen/department");
 const citizenPointsRoutes = require("./src/routes/citizen/points");
 const citizenWalletRoutes = require("./src/routes/citizen/wallet");
+const citizenServicesRoutes = require("./src/routes/citizen/services");
 
 function initRoutes(app) {
   // Admin
@@ -28,6 +32,8 @@ function initRoutes(app) {
   app.use("/api/admin", feedbackRoutes);
   app.use("/api/admin", logRoutes);
   app.use("/api/admin", pointRoutes);
+  app.use("/api/admin", departmentRoutes);
+  app.use("/api/admin", servicesRoutes);
 
   // Citizen
   app.use("/api/citizen", citizenAuthRoutes);
@@ -36,6 +42,8 @@ function initRoutes(app) {
   app.use("/api/citizen", citizenFeedbackRoutes);
   app.use("/api/citizen", citizenPointsRoutes);
   app.use("/api/citizen", citizenWalletRoutes);
+  app.use("/api/citizen", citizenDepartmentRoutes);
+  app.use("/api/citizen", citizenServicesRoutes);
 
   // Test
   app.get("/api/test", (req, res) => {
