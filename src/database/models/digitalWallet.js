@@ -23,7 +23,7 @@ const documentSchema = new mongoose.Schema(
     document_image: { type: String, required: true },
     status: {
       type: String,
-      enum: ["Issued", "Pending", "Revoked", "Expired"],
+      enum: ["Issued", "Pending", "Revoked", "finished"],
       required: true,
     },
     citizen_id: {
