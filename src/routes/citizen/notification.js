@@ -1,7 +1,7 @@
 const express = require("express");
 const {
   getCitizenNotifications,
-} = require("../../controller/citizen/feedback.js");
+} = require("../../controller/citizen/notification");
 const { changeLanguage } = require("../../middleware/language");
 const { citizenIsAuth } = require("../../middleware/auth");
 

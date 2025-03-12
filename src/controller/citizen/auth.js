@@ -1,5 +1,5 @@
 const bcrypt = require("bcryptjs");
-const { CitizenModel } = require("../../database/models/Citizen");
+const { CitizenModel } = require("../../database/models/citizen");
 const { HttpStatus, ApiError } = require("../../error");
 const { Config } = require("../../config");
 const { createToken } = require("../../utils/token");

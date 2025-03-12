@@ -1,5 +1,4 @@
-const Feedback = require("../models/Feedback");
-const { citizenIsAuth } = require("../middleware/auth");
+const Feedback = require("../../database/models/Feedback");
 
 const getFeedback = async (req, res) => {
   try {
