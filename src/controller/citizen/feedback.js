@@ -1,8 +1,33 @@
-const getFeedback = async (req, res) => {};
+const Feedback = require("../models/Feedback");
+const { citizenIsAuth } = require("../middleware/auth");
 
-const createFeedback = async (req, res) => {};
+const getFeedback = async (req, res) => {
+    try {
+        const feedbacks = await Feedback.find({ citizenId: req.citizenId }).sort({ createdAt: -1 });
+        res.status(200).json(feedbacks);
+    } catch (error) {
+        res.status(500).json({ message: "Error retrieving feedback", error });
+    }
+};
+
+const createFeedback = async (req, res) => {
+    try {
+        const { message } = req.body;
+        if (!message) {
+            return res.status(400).json({ message: "Feedback message is required" });
+        }
+        const feedback = new Feedback({
+            citizenId: req.citizenId,
+            message,
+        });
+        await feedback.save();
+        res.status(201).json({ message: "Feedback submitted successfully", feedback });
+    } catch (error) {
+        res.status(500).json({ message: "Error creating feedback", error });
+    }
+};
 
 module.exports = {
-  getFeedback,
-  createFeedback,
+    getFeedback: [citizenIsAuth, getFeedback],
+    createFeedback: [citizenIsAuth, createFeedback],
 };
