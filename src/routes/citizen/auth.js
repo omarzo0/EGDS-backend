@@ -17,5 +17,5 @@ router.post("/register", register);
 
 // Forget Password
 router.post("/forget-password", forgetPassword);
-
+router.post("/reset-password", resetPassword);
 module.exports = router;
