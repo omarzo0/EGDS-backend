@@ -1,4 +1,6 @@
-const { DocumentApplicationModel } = require("../models/DocumentApplication");
+const {
+  DocumentApplicationModel,
+} = require("../../database/models/DocumentApplication");
 
 // Citizen applies for a document
 const createDocument = async (req, res) => {

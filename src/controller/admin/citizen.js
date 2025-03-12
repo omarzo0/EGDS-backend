@@ -1,5 +1,4 @@
-const Citizen = require("../models/Citizen");
-const { verifyToken, isAdmin } = require("../middleware/authMiddleware");
+const Citizen = require("../../database/models/citizen");
 
 const getCitizenList = async (req, res) => {
   try {

@@ -1,5 +1,4 @@
-const LogModel = require("../models/Log");
-const { verifyToken, isAdmin } = require("../middleware/auth");
+const LogModel = require("../../database/models/Log");
 
 const getAllLog = async (req, res) => {
   try {

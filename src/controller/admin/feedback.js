@@ -1,5 +1,4 @@
 const Feedback = require("../../database/models/feedback");
-const { verifyToken, isAdmin } = require("../middleware/authMiddleware");
 
 const getAllFeedback = async (req, res) => {
   try {
