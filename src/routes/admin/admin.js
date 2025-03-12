@@ -15,7 +15,7 @@ router.get(
   "/admin",
   adminIsAuth,
   changeLanguage,
-  adminAllowedTo([AdminRole.SUPER_ADMIN]),
+  adminAllowedTo([AdminRole.SUPER_ADMIN, AdminRole.ADMIN]),
   getAdminList
 );
 router.post(

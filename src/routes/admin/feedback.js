@@ -10,7 +10,7 @@ router.get(
   "/feedback",
   adminIsAuth,
   changeLanguage,
-  adminAllowedTo([AdminRole.SUPER_ADMIN], getAllFeedback)
+  adminAllowedTo([AdminRole.SUPER_ADMIN, AdminRole.ADMIN], getAllFeedback)
 );
 
 module.exports = router;
