@@ -1,0 +1,22 @@
+{
+  "message": { "somethingWentWrong": "حدث خطأ ما." },
+  "validation": {
+    "email": {
+      "required": "البريد الإلكتروني مطلوب.",
+      "invalid": "البريد الإلكتروني غير صالح."
+    },
+    "password": {
+      "required": "كلمة المرور مطلوبة.",
+      "minLength": "يجب أن تتكون كلمة المرور من 6 أحرف على الأقل.",
+      "maxLength": "يجب أن تتكون كلمة المرور من 30 حرفًا كحد أقصى."
+    }
+  },
+  "error": {
+    "invalidLanguage": "اللغة غير مدعومة.",
+    "unauthorized": "الوصول غير المصرح به.",
+    "invalidAccessToken": "رمز الوصول غير صالح.",
+    "pleaseTryAgain": "يرجى المحاولة مرة أخرى.",
+    "endPointNotFound": "نقطة النهاية غير موجودة.",
+    "invalidEmailCredentials": "البريد الإلكتروني أو كلمة المرور غير صالحة."
+  }
+}
