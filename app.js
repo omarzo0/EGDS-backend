@@ -12,7 +12,6 @@ const eSignatureRoutes = require("./src/routes/admin/esignature");
 const feedbackRoutes = require("./src/routes/admin/feedback");
 const servicesRoutes = require("./src/routes/admin/services");
 const digitalwalletRoutes = require("./src/routes/admin/digitalwallet");
-const logRoutes = require("./src/routes/admin/log");
 const pointRoutes = require("./src/routes/admin/point");
 const citizenAuthRoutes = require("./src/routes/citizen/auth");
 const citizenDocumentRoutes = require("./src/routes/citizen/document");
@@ -33,7 +32,7 @@ function initRoutes(app) {
   app.use("/api/admin", documentRoutes);
   app.use("/api/admin", eSignatureRoutes);
   app.use("/api/admin", feedbackRoutes);
-  app.use("/api/admin", logRoutes);
+
   app.use("/api/admin", pointRoutes);
   app.use("/api/admin", departmentRoutes);
   app.use("/api/admin", servicesRoutes);
