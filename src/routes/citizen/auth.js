@@ -3,6 +3,7 @@ const {
   login,
   register,
   forgetPassword,
+  resetPassword
 } = require("../../controller/citizen/auth.js");
 const { validateBody } = require("../../middleware/validation.js");
 const { citizenLoginSchema } = require("../../validation/citizen/auth.js");
