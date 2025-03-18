@@ -13,6 +13,7 @@ const citizenSchema = new mongoose.Schema(
     phone_number: { type: String },
     email: { type: String, unique: true, required: true },
     age: { type: String, required: true, unique: true },
+    points: { type: String, required: true },
 
     marital_status: {
       type: String,
