@@ -18,6 +18,11 @@ const feedbackSchema = new mongoose.Schema(
       min: 1,
       max: 5,
     },
+    status: {
+      type: String,
+      enum: ["New", "Reviewed"],
+      default: "New",
+    },
   },
   { timestamps: true }
 );
