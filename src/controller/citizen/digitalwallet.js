@@ -2,7 +2,7 @@ const { DigitalDocument } = require("../../database/models/digitalWallet");
 
 const getAllDigitalDocument = async (req, res) => {
   try {
-    const { national_id } = req.params; // Assuming national_id is passed as a route parameter
+    const { national_id } = req.params;
 
     // Fetch digital documents from the database where id matches national_id
     const documents = await DigitalDocument.findAll({
@@ -22,7 +22,13 @@ const getAllDigitalDocument = async (req, res) => {
 
 const createDigitalDocument = async (req, res) => {
   try {
-    const { document_type, document_name, document_number, expiry_date, document_image } = req.body;
+    const {
+      document_type,
+      document_name,
+      document_number,
+      expiry_date,
+      document_image,
+    } = req.body;
 
     // Insert new digital document into the database
     const newDocument = await DigitalDocument.create({
@@ -33,7 +39,10 @@ const createDigitalDocument = async (req, res) => {
       document_image,
     });
 
-    res.status(201).json({ message: "Digital document created successfully", document: newDocument });
+    res.status(201).json({
+      message: "Digital document created successfully",
+      document: newDocument,
+    });
   } catch (error) {
     res.status(500).json({ message: "Server error", error: error.message });
   }

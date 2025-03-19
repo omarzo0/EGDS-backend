@@ -18,23 +18,29 @@ router.get(
   adminAllowedTo([AdminRole.SUPER_ADMIN, AdminRole.ADMIN]),
   getAdminList
 );
+
 router.post(
   "/admin",
   adminIsAuth,
   changeLanguage,
-  adminAllowedTo([AdminRole.SUPER_ADMIN], createAdmin)
+  adminAllowedTo([AdminRole.SUPER_ADMIN]),
+  createAdmin
 );
+
 router.put(
   "/admin/:id",
   adminIsAuth,
   changeLanguage,
-  adminAllowedTo([AdminRole.SUPER_ADMIN], updateAdmin)
+  adminAllowedTo([AdminRole.SUPER_ADMIN]),
+  updateAdmin
 );
+
 router.delete(
   "/admin/:id",
   adminIsAuth,
   changeLanguage,
-  adminAllowedTo([AdminRole.SUPER_ADMIN], deleteAdmin)
+  adminAllowedTo([AdminRole.SUPER_ADMIN]),
+  deleteAdmin
 );
 
 module.exports = router;

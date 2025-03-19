@@ -3,6 +3,7 @@ const {
   adminLogin,
   forgotPassword,
   resetPassword,
+  registerAdmin,
 } = require("../../controller/admin/auth");
 const { validateBody } = require("../../middleware/validation");
 const {
@@ -14,6 +15,7 @@ const {
 const router = express.Router();
 
 router.post("/login", validateBody(adminLoginSchema), adminLogin);
+router.post("/register", validateBody(adminLoginSchema), registerAdmin);
 
 router.post(
   "/forgot-password",

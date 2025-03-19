@@ -46,6 +46,33 @@ const adminLogin = async (req, res) => {
     res.status(error.error.code).json(error);
   }
 };
+const registerAdmin = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    const existingAdmin = await AdminModel.findOne({ email });
+    if (existingAdmin) {
+      throw ApiError.conflict("Email is already in use");
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
+    const newAdmin = new AdminModel({
+      email,
+      password: hashedPassword,
+    });
+
+    await newAdmin.save();
+
+    res
+      .status(HttpStatus.Created)
+      .json(successResponseFormat("Admin registered successfully"));
+  } catch (err) {
+    const error = errorResponseFormat(err.code, err.message);
+    res.status(error.error.code).json(error);
+  }
+};
 
 // Forgot Password Function
 const forgotPassword = async (req, res) => {
@@ -118,4 +145,4 @@ const resetPassword = async (req, res) => {
   }
 };
 
-module.exports = { adminLogin, forgotPassword, resetPassword };
+module.exports = { adminLogin, forgotPassword, resetPassword, registerAdmin };
