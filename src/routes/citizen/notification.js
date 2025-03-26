@@ -11,7 +11,7 @@ const router = express.Router();
 router.get(
   "/Notification",
   citizenIsAuth,
-  changeLanguage,
+  // changeLanguage,
   getCitizenNotifications
 );
 

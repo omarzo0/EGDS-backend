@@ -1,4 +1,6 @@
 const express = require("express");
+const cors = require("cors");
+
 const { initConfig, Config } = require("./src/config");
 const { initDB } = require("./src/database/init");
 const { _404Middleware } = require("./src/middleware/404");
@@ -11,6 +13,8 @@ const departmentRoutes = require("./src/routes/admin/department");
 const eSignatureRoutes = require("./src/routes/admin/esignature");
 const feedbackRoutes = require("./src/routes/admin/feedback");
 const servicesRoutes = require("./src/routes/admin/services");
+const NotificationRoutes = require("./src/routes/admin/notification");
+const ProfileRoutes = require("./src/routes/admin/getme");
 const digitalwalletRoutes = require("./src/routes/admin/digitalwallet");
 const pointRoutes = require("./src/routes/admin/point");
 const citizenAuthRoutes = require("./src/routes/citizen/auth");
@@ -32,11 +36,12 @@ function initRoutes(app) {
   app.use("/api/admin", documentRoutes);
   app.use("/api/admin", eSignatureRoutes);
   app.use("/api/admin", feedbackRoutes);
-
+  app.use("/api/admin", NotificationRoutes);
   app.use("/api/admin", pointRoutes);
   app.use("/api/admin", departmentRoutes);
   app.use("/api/admin", servicesRoutes);
   app.use("/api/admin", digitalwalletRoutes);
+  app.use("/api/admin", ProfileRoutes);
 
   // Citizen
   app.use("/api/citizen", citizenAuthRoutes);
@@ -49,7 +54,6 @@ function initRoutes(app) {
   app.use("/api/citizen", citizenServicesRoutes);
   app.use("/api/citizen", citizenDigitalDocumentRoutes);
   app.use("/api/citizen", citizenNotificationRoutes);
-
   // Test
   app.get("/api/test", (req, res) => {
     res.send("Server is running......");
@@ -57,6 +61,7 @@ function initRoutes(app) {
 }
 
 function initMiddlewares(app) {
+  app.use(cors());
   app.use(express.json());
 }
 
@@ -83,7 +88,7 @@ async function initServer() {
   errorMiddleware(app);
 
   // Start the server
-  const PORT = Config.PORT || 3000;
+  const PORT = Config.PORT || 5000;
   app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
   });

@@ -1,9 +1,11 @@
-const Admin = require("../../database/models/admin");
+const { AdminModel } = require("../../database/models/admin");
 const bcrypt = require("bcrypt");
 
 const getAdminList = async (req, res) => {
   try {
-    const admins = await Admin.find();
+    const admins = await AdminModel.find().select(
+      "first_name last_name email role password national_id phone_number createdAt "
+    );
     if (!admins.length) {
       return res.status(200).json({ message: "No admins found", admins: [] });
     }
@@ -17,36 +19,66 @@ const getAdminList = async (req, res) => {
 
 const createAdmin = async (req, res) => {
   try {
-    const { name, email, password, role, age, national_id, phone_number } =
-      req.body;
+    const {
+      first_name,
+      last_name,
+      email,
+      password,
+      role,
+      birthday_date,
+      national_id,
+      phone_number,
+    } = req.body;
 
-    // Check if email already exists
-    const existingAdmin = await Admin.findOne({ email });
-    if (existingAdmin) {
-      return res.status(400).json({ message: "Email already in use" });
+    if (
+      !first_name ||
+      !last_name ||
+      !email ||
+      !password ||
+      !role ||
+      !birthday_date ||
+      !national_id ||
+      !phone_number
+    ) {
+      return res
+        .status(400)
+        .json({ success: false, message: "All fields are required" });
     }
 
-    // Hash the password
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const existingAdmin = await AdminModel.findOne({
+      $or: [{ email }, { national_id }],
+    });
+    if (existingAdmin) {
+      return res.status(400).json({
+        success: false,
+        message: "Email or National ID already in use",
+      });
+    }
 
-    const newAdmin = new Admin({
-      name,
+    // Create new admin
+    const newAdmin = new AdminModel({
+      first_name,
+      last_name,
       email,
-      password: hashedPassword, // Store hashed password
+      password,
       role,
-      age,
+      birthday_date,
       national_id,
       phone_number,
     });
 
     await newAdmin.save();
-    res
-      .status(201)
-      .json({ message: "Admin created successfully", admin: newAdmin });
+    res.status(201).json({
+      success: true,
+      message: "Admin created successfully",
+      admin: newAdmin,
+    });
   } catch (error) {
-    res
-      .status(500)
-      .json({ message: "Error creating admin", error: error.message });
+    res.status(500).json({
+      success: false,
+      message: "Error creating admin",
+      error: error.message,
+    });
   }
 };
 
@@ -55,16 +87,9 @@ const updateAdmin = async (req, res) => {
     const { id } = req.params;
 
     // Check if admin exists
-    const existingAdmin = await Admin.findById(id);
+    const existingAdmin = await AdminModel.findById(id);
     if (!existingAdmin) {
       return res.status(404).json({ message: "Admin not found" });
-    }
-
-    // Authorization: Only superadmin or the admin themself can update
-    if (req.user.role !== "superadmin" && req.user.id !== id) {
-      return res
-        .status(403)
-        .json({ message: "Unauthorized to update this admin" });
     }
 
     // Hash new password if updated
@@ -72,7 +97,7 @@ const updateAdmin = async (req, res) => {
       req.body.password = await bcrypt.hash(req.body.password, 10);
     }
 
-    const updatedAdmin = await Admin.findByIdAndUpdate(id, req.body, {
+    const updatedAdmin = await AdminModel.findByIdAndUpdate(id, req.body, {
       new: true,
     });
 
@@ -91,24 +116,17 @@ const deleteAdmin = async (req, res) => {
     const { id } = req.params;
 
     // Find the admin to delete
-    const adminToDelete = await Admin.findById(id);
+    const adminToDelete = await AdminModel.findById(id);
     if (!adminToDelete) {
       return res.status(404).json({ message: "Admin not found" });
     }
 
     // Prevent deletion of superadmins
-    if (adminToDelete.role === "superadmin") {
+    if (adminToDelete.role === "super admin") {
       return res.status(403).json({ message: "Superadmin cannot be deleted" });
     }
 
-    // Only superadmins can delete other admins
-    if (req.user.role !== "superadmin") {
-      return res
-        .status(403)
-        .json({ message: "Unauthorized to delete this admin" });
-    }
-
-    await Admin.findByIdAndDelete(id);
+    await AdminModel.findByIdAndDelete(id);
     res.status(200).json({ message: "Admin deleted successfully" });
   } catch (error) {
     res

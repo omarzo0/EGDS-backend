@@ -7,13 +7,17 @@ const citizenSchema = new mongoose.Schema(
     middle_name: { type: String, required: true },
     last_name: { type: String, required: true },
     date_of_birth: { type: Date, required: true },
-    gender: { type: String, enum: ["Male", "Female"], required: true },
+    gender: {
+      type: String,
+      enum: ["Male", "Female"],
+      required: true,
+    },
     national_id: { type: String, unique: true, required: true },
     address: { type: String, required: true },
-    phone_number: { type: String },
+    Government: { type: String, required: true },
+    phone_number: { type: String, required: true },
     email: { type: String, unique: true, required: true },
-    age: { type: String, required: true, unique: true },
-    points: { type: String, required: true },
+    points: { type: String },
 
     marital_status: {
       type: String,
