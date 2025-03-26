@@ -8,9 +8,6 @@ const { citizenIsAuth } = require("../../middleware/auth");
 
 const router = express.Router();
 
-// Get feedback
-router.get("/feedback", citizenIsAuth, changeLanguage, getFeedback);
-
 // Create feedback
 router.post("/feedback", citizenIsAuth, changeLanguage, createFeedback);
 

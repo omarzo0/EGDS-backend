@@ -12,28 +12,32 @@ const {
 const router = express.Router();
 
 router.get(
-  "/citizen",
-  adminIsAuth,
-  changeLanguage,
-  adminAllowedTo([AdminRole.SUPER_ADMIN, AdminRole.ADMIN], getAllCitizen)
+  "/citizen-list",
+  // adminIsAuth,
+  // changeLanguage,
+  // adminAllowedTo([AdminRole.SUPER_ADMIN, AdminRole.ADMIN]),
+  getAllCitizen
 );
 router.post(
-  "/citizen",
-  adminIsAuth,
-  changeLanguage,
-  adminAllowedTo([AdminRole.SUPER_ADMIN, AdminRole.ADMIN], createCitizen)
+  "/create-citizen",
+  // adminIsAuth,
+  // changeLanguage,
+  // adminAllowedTo([AdminRole.SUPER_ADMIN, AdminRole.ADMIN]),
+  createCitizen
 );
 router.put(
-  "/citizen/:id",
-  adminIsAuth,
-  changeLanguage,
-  adminAllowedTo([AdminRole.SUPER_ADMIN, AdminRole.ADMIN], updateCitizen)
+  "/update-citizen/:id",
+  // adminIsAuth,
+  // changeLanguage,
+  // adminAllowedTo([AdminRole.SUPER_ADMIN, AdminRole.ADMIN]),
+  updateCitizen
 );
 router.delete(
-  "/citizen/:id",
-  adminIsAuth,
-  changeLanguage,
-  adminAllowedTo([AdminRole.SUPER_ADMIN, AdminRole.ADMIN], deleteCitizen)
+  "/delete-citizen/:id",
+  // adminIsAuth,
+  // changeLanguage,
+  // adminAllowedTo([AdminRole.SUPER_ADMIN, AdminRole.ADMIN]),
+  deleteCitizen
 );
 
 module.exports = router;

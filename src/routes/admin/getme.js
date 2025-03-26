@@ -3,44 +3,26 @@ const { changeLanguage } = require("../../middleware/language");
 const { adminAllowedTo, adminIsAuth } = require("../../middleware/auth");
 const { AdminRole } = require("../../database/models/admin");
 const {
-  getAdminList,
-  createAdmin,
-  updateAdmin,
-  deleteAdmin,
-} = require("../../controller/admin/admin");
+  getAdminProfile,
+  updateAdminProfile,
+} = require("../../controller/admin/getme");
 
 const router = express.Router();
 
 router.get(
-  "/adminList",
+  "/profile/:id?",
   // adminIsAuth,
   // changeLanguage,
   // adminAllowedTo([AdminRole.SUPER_ADMIN]),
-  getAdminList
-);
-
-router.post(
-  "/create-admin",
-  // adminIsAuth,
-  // changeLanguage,
-  // adminAllowedTo([AdminRole.SUPER_ADMIN]),
-  createAdmin
+  getAdminProfile
 );
 
 router.put(
-  "/update-admin/:id",
+  "/update-profile/:id?",
   // adminIsAuth,
   // changeLanguage,
   // adminAllowedTo([AdminRole.SUPER_ADMIN]),
-  updateAdmin
-);
-
-router.delete(
-  "/delete-admin/:id",
-  // adminIsAuth,
-  // changeLanguage,
-  // adminAllowedTo([AdminRole.SUPER_ADMIN]),
-  deleteAdmin
+  updateAdminProfile
 );
 
 module.exports = router;

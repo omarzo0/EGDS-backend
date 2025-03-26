@@ -16,7 +16,7 @@ const adminSchema = new mongoose.Schema(
     password: { type: String, required: true },
     phone_number: { type: String, required: true, unique: true },
     national_id: { type: String, required: true, unique: true },
-    age: { type: String, required: true, unique: true },
+    birthday_date: { type: Date, required: true },
     role: {
       type: String,
       enum: [AdminRole.SUPER_ADMIN, AdminRole.ADMIN, AdminRole.OFFICER],
@@ -27,6 +27,7 @@ const adminSchema = new mongoose.Schema(
       enum: ["en", "ar"],
       default: "en",
     },
+    isDeleted: { type: Boolean, default: false },
   },
   { timestamps: true }
 );

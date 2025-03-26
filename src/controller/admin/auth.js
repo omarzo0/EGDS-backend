@@ -10,6 +10,7 @@ const {
   successResponseFormat,
   errorResponseFormat,
 } = require("../../utils/response");
+const { generateOTP, verifyOTP } = require("../../utils/otp");
 
 // Admin Login Function
 const adminLogin = async (req, res) => {
@@ -32,65 +33,35 @@ const adminLogin = async (req, res) => {
       Config.JWT_ADMIN_SECRET_EXP
     );
 
-    const result = successResponseFormat({
-      id: admin._id.toString(),
-      accessToken: accessToken,
-      accessTokenExpireTime: new Date(
-        parseDuration(Config.JWT_ADMIN_SECRET_EXP)
-      ),
-    });
-
-    res.status(HttpStatus.Ok).json(result);
+    res.status(HttpStatus.Ok).json(
+      successResponseFormat({
+        id: admin._id.toString(),
+        accessToken: accessToken,
+        accessTokenExpireTime: new Date(
+          parseDuration(Config.JWT_ADMIN_SECRET_EXP)
+        ),
+      })
+    );
   } catch (err) {
-    const error = errorResponseFormat(err.code, err.message);
-    res.status(error.error.code).json(error);
-  }
-};
-const registerAdmin = async (req, res) => {
-  try {
-    const { email, password } = req.body;
-
-    const existingAdmin = await AdminModel.findOne({ email });
-    if (existingAdmin) {
-      throw ApiError.conflict("Email is already in use");
-    }
-
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
-
-    const newAdmin = new AdminModel({
-      email,
-      password: hashedPassword,
-    });
-
-    await newAdmin.save();
-
     res
-      .status(HttpStatus.Created)
-      .json(successResponseFormat("Admin registered successfully"));
-  } catch (err) {
-    const error = errorResponseFormat(err.code, err.message);
-    res.status(error.error.code).json(error);
+      .status(err.code || HttpStatus.InternalServerError)
+      .json(errorResponseFormat(err.code, err.message));
   }
 };
 
-// Forgot Password Function
+// Forgot Password Function with OTP
 const forgotPassword = async (req, res) => {
   try {
     const { email } = req.body;
-
     const admin = await AdminModel.findOne({ email });
     if (!admin) {
       throw ApiError.notFound("Admin not found");
     }
 
-    const resetToken = jwt.sign(
-      { id: admin._id.toString() },
-      Config.JWT_RESET_SECRET,
-      {
-        expiresIn: "1h",
-      }
-    );
+    const otp = generateOTP();
+    admin.otp = otp;
+    admin.otpExpiry = Date.now() + 10 * 60 * 1000; // OTP expires in 10 minutes
+    await admin.save();
 
     const transporter = nodemailer.createTransport({
       service: "gmail",
@@ -100,49 +71,52 @@ const forgotPassword = async (req, res) => {
       },
     });
 
-    const resetLink = `${Config.FRONTEND_URL}/reset-password?token=${resetToken}`;
-
     const mailOptions = {
       from: Config.EMAIL_USER,
       to: email,
-      subject: "Password Reset Request",
+      subject: "Password Reset OTP",
+      text: `Your OTP for password reset is: ${otp}`,
     };
 
     await transporter.sendMail(mailOptions);
 
     res
       .status(HttpStatus.Ok)
-      .json(successResponseFormat("Reset link sent successfully"));
+      .json(successResponseFormat("OTP sent successfully"));
   } catch (err) {
-    const error = errorResponseFormat(err.code, err.message);
-    res.status(error.error.code).json(error);
+    res
+      .status(err.code || HttpStatus.InternalServerError)
+      .json(errorResponseFormat(err.code, err.message));
   }
 };
 
-// Reset Password Function
+// Reset Password Function with OTP verification
 const resetPassword = async (req, res) => {
   try {
-    const { token, newPassword } = req.body;
-
-    const decoded = jwt.verify(token, Config.JWT_RESET_SECRET);
-    const admin = await AdminModel.findById(decoded.id);
+    const { email, otp, newPassword } = req.body;
+    const admin = await AdminModel.findOne({ email });
     if (!admin) {
-      throw ApiError.notFound("Invalid or expired token");
+      throw ApiError.notFound("Admin not found");
+    }
+
+    if (!verifyOTP(admin.otp, otp, admin.otpExpiry)) {
+      throw ApiError.badRequest("Invalid or expired OTP");
     }
 
     const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(newPassword, salt);
-
-    admin.password = hashedPassword;
+    admin.password = await bcrypt.hash(newPassword, salt);
+    admin.otp = null;
+    admin.otpExpiry = null;
     await admin.save();
 
     res
       .status(HttpStatus.Ok)
       .json(successResponseFormat("Password reset successfully"));
   } catch (err) {
-    const error = errorResponseFormat(err.code, err.message);
-    res.status(error.error.code).json(error);
+    res
+      .status(err.code || HttpStatus.InternalServerError)
+      .json(errorResponseFormat(err.code, err.message));
   }
 };
 
-module.exports = { adminLogin, forgotPassword, resetPassword, registerAdmin };
+module.exports = { adminLogin, forgotPassword, resetPassword };

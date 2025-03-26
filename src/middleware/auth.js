@@ -16,21 +16,26 @@ async function adminIsAuth(req, res, next) {
       throw ApiError.invalidAccessToken();
     }
 
-    const adminId = verifyToken(splitHeader[1], Config.JWT_ADMIN_SECRET);
+    // Verify token and get admin ID
+    const decoded = verifyToken(splitHeader[1], Config.JWT_ADMIN_SECRET);
 
-    const admin = await AdminModel.findById(req.adminId.toString()).select(
+    // Find admin using the ID from the token
+    const admin = await AdminModel.findById(decoded._id || decoded.id).select(
       "-password"
     );
+
     if (!admin) {
       throw ApiError.invalidAccessToken();
     }
 
-    req.adminId = adminId.toString();
+    // Attach admin data to request
+    req.adminId = admin._id.toString();
     req.admin = admin;
-    req.language = req.admin.languagePreference || "en";
+    req.language = admin.languagePreference || "en";
 
     next();
   } catch (err) {
+    console.error("Admin auth error:", err); // Add logging
     next(err);
   }
 }
