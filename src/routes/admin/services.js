@@ -7,6 +7,7 @@ const {
   createService,
   updateService,
   deleteService,
+  getServiceCount,
 } = require("../../controller/admin/services");
 
 const router = express.Router();
@@ -17,6 +18,13 @@ router.get(
   // changeLanguage,
   // adminAllowedTo([AdminRole.SUPER_ADMIN, AdminRole.ADMIN]),
   getAllServices
+);
+router.get(
+  "/services-count",
+  // adminIsAuth,
+  // changeLanguage,
+  // adminAllowedTo([AdminRole.SUPER_ADMIN, AdminRole.ADMIN]),
+  getServiceCount
 );
 router.post(
   "/create-services",

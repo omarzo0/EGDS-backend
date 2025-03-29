@@ -4,48 +4,65 @@ const { adminAllowedTo, adminIsAuth } = require("../../middleware/auth");
 const { AdminRole } = require("../../database/models/admin");
 const {
   getAllDigitalDocument,
-  getDigitalDocumentById,
   UpdateDigitalDocumentStatus,
   deleteDigitalDocument,
+  deleteDigitalWallet,
+  getDigitalWalletStatistics,
+  suspendDigitalWallet,
+  unsuspendDigitalWallet,
 } = require("../../controller/admin/digitalwallet");
 
 const router = express.Router();
 
 router.get(
   "/digital-document",
-  adminIsAuth,
-  changeLanguage,
-  adminAllowedTo(
-    [AdminRole.SUPER_ADMIN, AdminRole.ADMIN],
-    getAllDigitalDocument
-  )
+  // adminIsAuth,
+  // changeLanguage,
+  // adminAllowedTo([AdminRole.SUPER_ADMIN, AdminRole.ADMIN]),
+  getAllDigitalDocument
 );
+
 router.get(
-  "/digital-document/:id",
-  adminIsAuth,
-  changeLanguage,
-  adminAllowedTo(
-    [AdminRole.SUPER_ADMIN, AdminRole.ADMIN],
-    getDigitalDocumentById
-  )
+  "/admin/statistics/digital-wallets",
+  // adminIsAuth,
+  // changeLanguage,
+  // adminAllowedTo([AdminRole.SUPER_ADMIN, AdminRole.ADMIN]),
+  getDigitalWalletStatistics
 );
 router.put(
   "/digital-document/:id",
-  adminIsAuth,
-  changeLanguage,
-  adminAllowedTo(
-    [AdminRole.SUPER_ADMIN, AdminRole.ADMIN],
-    UpdateDigitalDocumentStatus
-  )
+  // adminIsAuth,
+  // changeLanguage,
+  // adminAllowedTo([AdminRole.SUPER_ADMIN, AdminRole.ADMIN]),
+  UpdateDigitalDocumentStatus
 );
 router.delete(
-  "/digital-document/:id",
-  adminIsAuth,
-  changeLanguage,
-  adminAllowedTo(
-    [AdminRole.SUPER_ADMIN, AdminRole.ADMIN],
-    deleteDigitalDocument
-  )
+  "/documents/:document_id",
+  // adminIsAuth,
+  // changeLanguage,
+  // adminAllowedTo([AdminRole.SUPER_ADMIN, AdminRole.ADMIN]),
+  deleteDigitalDocument
+);
+router.delete(
+  "/admin/wallets/:citizen_id",
+  // adminIsAuth,
+  // changeLanguage,
+  // adminAllowedTo([AdminRole.SUPER_ADMIN]),
+  deleteDigitalWallet
+);
+router.put(
+  "/wallet/suspend/:citizen_id",
+  // adminIsAuth,
+  // changeLanguage,
+  // adminAllowedTo([AdminRole.SUPER_ADMIN, AdminRole.ADMIN]),
+  suspendDigitalWallet
 );
 
+router.put(
+  "/wallet/unsuspend/:citizen_id",
+  // adminIsAuth,
+  // changeLanguage,
+  // adminAllowedTo([AdminRole.SUPER_ADMIN, AdminRole.ADMIN]),
+  unsuspendDigitalWallet
+);
 module.exports = router;

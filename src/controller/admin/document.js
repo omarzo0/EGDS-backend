@@ -112,10 +112,47 @@ const deleteDocument = async (req, res) => {
     });
   }
 };
+const getDocumentCount = async (req, res) => {
+  try {
+    const count = await DocumentApplicationModel.countDocuments();
+    res.status(200).json(count);
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch document applications count",
+      error: error.message,
+    });
+  }
+};
 
+const getDocumentStatusCounts = async (req, res) => {
+  try {
+    const [approved, pending, inReview, rejected, completed] =
+      await Promise.all([
+        DocumentApplicationModel.countDocuments({ status: "Approved" }),
+        DocumentApplicationModel.countDocuments({ status: "Pending" }),
+        DocumentApplicationModel.countDocuments({ status: "In Review" }),
+        DocumentApplicationModel.countDocuments({ status: "Rejected" }),
+        DocumentApplicationModel.countDocuments({ status: "Completed" }),
+      ]);
+
+    res.status(200).json({
+      labels: ["Approved", "Pending", "In Review", "Rejected", "Completed"],
+      values: [approved, pending, inReview, rejected, completed],
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch document status counts",
+      error: error.message,
+    });
+  }
+};
 module.exports = {
   getAllDocument,
   getDocumentListById,
   updateDocumentStatus,
   deleteDocument,
+  getDocumentCount,
+  getDocumentStatusCounts,
 };

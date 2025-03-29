@@ -137,9 +137,22 @@ const deleteCitizen = async (req, res) => {
   }
 };
 
+const getCitizenCount = async (req, res) => {
+  try {
+    const count = await CitizenModel.countDocuments();
+    res.status(200).json(count);
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch citizen count",
+      error: error.message,
+    });
+  }
+};
 module.exports = {
   getAllCitizen,
   createCitizen,
   updateCitizen,
   deleteCitizen,
+  getCitizenCount
 };

@@ -7,6 +7,8 @@ const {
   getDocumentListById,
   updateDocumentStatus,
   deleteDocument,
+  getDocumentCount,
+  getDocumentStatusCounts,
 } = require("../../controller/admin/document");
 
 const router = express.Router();
@@ -19,6 +21,20 @@ router.get(
     [AdminRole.SUPER_ADMIN, AdminRole.ADMIN, AdminRole.OFFICER],
     getAllDocument
   )
+);
+router.get(
+  "/document-count",
+  // adminIsAuth,
+  // changeLanguage,
+  // adminAllowedTo([AdminRole.SUPER_ADMIN, AdminRole.ADMIN, AdminRole.OFFICER]),
+  getDocumentCount
+);
+router.get(
+  "/document-count-status",
+  // adminIsAuth,
+  // changeLanguage,
+  // adminAllowedTo([AdminRole.SUPER_ADMIN, AdminRole.ADMIN, AdminRole.OFFICER]),
+  getDocumentStatusCounts
 );
 router.get(
   "/document/:id",
