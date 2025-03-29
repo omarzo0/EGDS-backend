@@ -18,10 +18,10 @@ router.get(
 );
 
 router.put(
-  "/update-profile/:id?",
-  adminIsAuth,
+  "/profile/:id?",
+  // adminIsAuth,
   // changeLanguage,
-  adminAllowedTo([AdminRole.SUPER_ADMIN]),
+  // adminAllowedTo([AdminRole.SUPER_ADMIN]),
   updateAdminProfile
 );
 

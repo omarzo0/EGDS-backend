@@ -9,8 +9,8 @@ const router = express.Router();
 
 // Get feedback
 router.get(
-  "/Notification",
-  citizenIsAuth,
+  "/Notification-list",
+  // citizenIsAuth,
   // changeLanguage,
   getCitizenNotifications
 );

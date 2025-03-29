@@ -10,6 +10,7 @@ const {
   getDigitalWalletStatistics,
   suspendDigitalWallet,
   unsuspendDigitalWallet,
+  getDigitalWalletById,
 } = require("../../controller/admin/digitalwallet");
 
 const router = express.Router();
@@ -20,6 +21,13 @@ router.get(
   // changeLanguage,
   // adminAllowedTo([AdminRole.SUPER_ADMIN, AdminRole.ADMIN]),
   getAllDigitalDocument
+);
+router.get(
+  "/digital-wallet-details/:id",
+  // adminIsAuth,
+  // changeLanguage,
+  // adminAllowedTo([AdminRole.SUPER_ADMIN, AdminRole.ADMIN]),
+  getDigitalWalletById
 );
 
 router.get(

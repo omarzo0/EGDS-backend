@@ -8,6 +8,8 @@ const {
   sendNotificationToAllCitizens,
   sendNotificationToAdminsByType,
   getNotificationsForAdmin,
+  sendNotificationToAdmin,
+  sendNotificationToAllAdmins,
 } = require("../../controller/admin/notification");
 
 // Create new notification
@@ -38,5 +40,19 @@ router.get(
   // changeLanguage,
   // adminAllowedTo([AdminRole.SUPER_ADMIN]),
   getNotificationsForAdmin
+);
+router.post(
+  "/send/:adminId",
+  // adminIsAuth,
+  // changeLanguage,
+  // adminAllowedTo([AdminRole.SUPER_ADMIN]),
+  sendNotificationToAdmin
+);
+router.post(
+  "/notifications/admins/all",
+  // adminIsAuth,
+  // changeLanguage,
+  // adminAllowedTo([AdminRole.SUPER_ADMIN]),
+  sendNotificationToAllAdmins
 );
 module.exports = router;

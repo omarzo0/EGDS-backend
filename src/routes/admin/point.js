@@ -3,37 +3,34 @@ const { changeLanguage } = require("../../middleware/language");
 const { adminAllowedTo, adminIsAuth } = require("../../middleware/auth");
 const { AdminRole } = require("../../database/models/admin");
 const {
-  getAllPoint,
-  getPointListById,
-  updatePoint,
-  deletePoint,
+  getAllServices,
+  updateServicePoints,
+  deleteService,
 } = require("../../controller/admin/point");
 
 const router = express.Router();
 
 router.get(
-  "/point",
-  adminIsAuth,
-  changeLanguage,
-  adminAllowedTo([AdminRole.SUPER_ADMIN, AdminRole.ADMIN], getAllPoint)
+  "/get-services",
+  // adminIsAuth,
+  // changeLanguage,
+  // adminAllowedTo([AdminRole.SUPER_ADMIN, AdminRole.ADMIN]),
+  getAllServices
 );
-router.get(
-  "/point/:id",
-  adminIsAuth,
-  changeLanguage,
-  adminAllowedTo([AdminRole.SUPER_ADMIN, AdminRole.ADMIN], getPointListById)
-);
+
 router.put(
-  "/point/:id",
-  adminIsAuth,
-  changeLanguage,
-  adminAllowedTo([AdminRole.SUPER_ADMIN, AdminRole.ADMIN], updatePoint)
+  "/update-point/:id/points",
+  // adminIsAuth,
+  // changeLanguage,
+  // adminAllowedTo([AdminRole.SUPER_ADMIN, AdminRole.ADMIN]),
+  updateServicePoints
 );
 router.delete(
-  "/point/:id",
-  adminIsAuth,
-  changeLanguage,
-  adminAllowedTo([AdminRole.SUPER_ADMIN, AdminRole.ADMIN], deletePoint)
+  "/delete-point/:id",
+  // adminIsAuth,
+  // changeLanguage,
+  // adminAllowedTo([AdminRole.SUPER_ADMIN, AdminRole.ADMIN]),
+  deleteService
 );
 
 module.exports = router;

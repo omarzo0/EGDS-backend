@@ -24,10 +24,22 @@ const feedbackSchema = new mongoose.Schema(
       default: "New",
     },
   },
-  { timestamps: true }
+  {
+    timestamps: true,
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true },
+  }
 );
+
+// Add virtual population for citizen details
+feedbackSchema.virtual("citizen", {
+  ref: "Citizen",
+  localField: "Citizen_id",
+  foreignField: "_id",
+  justOne: true,
+});
 
 const FeedbackModel =
   mongoose.models.Feedback || mongoose.model("Feedback", feedbackSchema);
 
-module.exports = { FeedbackModel };
+module.exports = FeedbackModel;
