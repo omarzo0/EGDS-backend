@@ -7,6 +7,7 @@ const {
   createCitizen,
   updateCitizen,
   deleteCitizen,
+  getCitizenCount,
 } = require("../../controller/admin/citizen");
 
 const router = express.Router();
@@ -17,6 +18,13 @@ router.get(
   // changeLanguage,
   // adminAllowedTo([AdminRole.SUPER_ADMIN, AdminRole.ADMIN]),
   getAllCitizen
+);
+router.get(
+  "/citizen-count",
+  // adminIsAuth,
+  // changeLanguage,
+  // adminAllowedTo([AdminRole.SUPER_ADMIN, AdminRole.ADMIN]),
+  getCitizenCount
 );
 router.post(
   "/create-citizen",

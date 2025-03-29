@@ -47,79 +47,94 @@ const getAdminProfile = asyncHandler(async (req, res) => {
 });
 
 const updateAdminProfile = asyncHandler(async (req, res) => {
-  let adminId;
-
-  if (req.params.id) {
-    // Verify the requesting admin has permission to update this profile
-    // For example, only super admins can update other admins' profiles
-    if (
-      req.admin.role !== AdminRole.SUPER_ADMIN &&
-      req.params.id !== req.admin._id.toString()
-    ) {
-      res.status(403);
-      throw new Error("Not authorized to update this profile");
-    }
-    adminId = req.params.id;
-  } else {
-    // Default to authenticated admin's ID
-    adminId = req.admin._id;
-  }
-
-  const admin = await AdminModel.findById(adminId);
-
-  if (!admin) {
-    res.status(404);
-    throw new Error("Admin not found");
-  }
-
-  // List of allowed fields that can be updated
-  const updatableFields = [
-    "first_name",
-    "last_name",
-    "email",
-    "phone_number",
-    "birthday_date",
-    "languagePreference",
-  ];
-
-  // Update allowed fields
-  updatableFields.forEach((field) => {
-    if (req.body[field] !== undefined) {
-      admin[field] = req.body[field];
-    }
-  });
-
-  // Handle password update with additional security
-  if (req.body.password) {
-    // For password changes, require current password verification
-    if (req.body.current_password) {
-      const isMatch = await admin.matchPassword(req.body.current_password);
-      if (!isMatch) {
-        res.status(401);
-        throw new Error("Current password is incorrect");
-      }
-    } else if (req.params.id && req.admin._id.toString() !== req.params.id) {
-      // If updating another admin's profile, don't allow password change without current password
+  try {
+    // Verify authentication
+    if (!req.admin) {
       res.status(401);
-      throw new Error("Current password required for password changes");
+      throw new Error("Not authenticated");
     }
 
-    admin.password = req.body.password; // Password will be hashed in pre-save hook
+    let adminId;
+    const isSuperAdmin = req.admin.role === AdminRole.SUPER_ADMIN;
+
+    // Determine which admin to update
+    if (req.params.id) {
+      // Verify permissions
+      if (!isSuperAdmin && req.params.id !== req.admin._id.toString()) {
+        res.status(403);
+        throw new Error("Not authorized to update this profile");
+      }
+      adminId = req.params.id;
+    } else {
+      adminId = req.admin._id;
+    }
+
+    // Validate ID format
+    if (!mongoose.Types.ObjectId.isValid(adminId)) {
+      res.status(400);
+      throw new Error("Invalid admin ID format");
+    }
+
+    const admin = await AdminModel.findById(adminId);
+    if (!admin) {
+      res.status(404);
+      throw new Error("Admin not found");
+    }
+
+    // Update fields
+    const updatableFields = [
+      "first_name",
+      "last_name",
+      "email",
+      "phone_number",
+      "birthday_date",
+      "languagePreference",
+    ];
+
+    updatableFields.forEach((field) => {
+      if (req.body[field] !== undefined) {
+        admin[field] = req.body[field];
+      }
+    });
+
+    // Handle password update
+    if (req.body.password) {
+      if (req.body.current_password) {
+        const isMatch = await admin.matchPassword(req.body.current_password);
+        if (!isMatch) {
+          res.status(401);
+          throw new Error("Current password is incorrect");
+        }
+      } else if (req.params.id && !isSuperAdmin) {
+        res.status(401);
+        throw new Error("Current password required for password changes");
+      }
+      admin.password = req.body.password;
+    }
+
+    const updatedAdmin = await admin.save();
+
+    // Prepare response
+    const adminData = updatedAdmin.toObject();
+    delete adminData.password;
+    delete adminData.isDeleted;
+    delete adminData.__v;
+
+    res.status(200).json({
+      success: true,
+      data: adminData,
+      message: "Profile updated successfully",
+    });
+  } catch (error) {
+    console.error("Profile update error:", error);
+    res.status(error.statusCode || 500).json({
+      status: "error",
+      error: {
+        code: error.statusCode || 500,
+        message: error.message || "Something went wrong.",
+      },
+    });
   }
-
-  const updatedAdmin = await admin.save();
-
-  // Prepare the response data without sensitive information
-  const adminData = updatedAdmin.toObject();
-  delete adminData.password;
-  delete adminData.isDeleted;
-  delete adminData.__v;
-
-  res.status(200).json({
-    success: true,
-    data: adminData,
-    message: "Profile updated successfully",
-  });
 });
 
 module.exports = {

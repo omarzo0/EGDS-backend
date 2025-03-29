@@ -12,6 +12,11 @@ const citizenSchema = new mongoose.Schema(
       enum: ["Male", "Female"],
       required: true,
     },
+    wallet_status: {
+      type: String,
+      enum: ["active", "suspended", "pending"],
+      default: "active",
+    },
     national_id: { type: String, unique: true, required: true },
     address: { type: String, required: true },
     Government: { type: String, required: true },

@@ -1,22 +1,26 @@
-const { DigitalDocument } = require("../../database/models/digitalWallet");
+const DocumentModel = require("../../database/models/digitalWallet");
+const mongoose = require("mongoose");
 
-const getAllDigitalDocument = async (req, res) => {
+const getAllMyDocuments = async (req, res) => {
   try {
-    const { national_id } = req.params;
+    const { citizen_id } = req.params;
+    const requestingUser = req.user;
 
-    // Fetch digital documents from the database where id matches national_id
-    const documents = await DigitalDocument.findAll({
-      where: { id: national_id },
+    const documents = await DocumentModel.find({ citizen_id }).sort({
+      createdAt: -1,
     });
 
-    // Check if documents exist
-    if (!documents || documents.length === 0) {
-      return res.status(404).json({ message: "No digital documents found." });
-    }
-
-    res.status(200).json({ documents });
+    res.status(200).json({
+      success: true,
+      count: documents.length,
+      documents,
+    });
   } catch (error) {
-    res.status(500).json({ message: "Server error", error: error.message });
+    res.status(500).json({
+      success: false,
+      message: "Server error while retrieving documents",
+      error: error.message,
+    });
   }
 };
 
@@ -26,49 +30,95 @@ const createDigitalDocument = async (req, res) => {
       document_type,
       document_name,
       document_number,
+      issue_date,
       expiry_date,
       document_image,
+      citizen_id,
     } = req.body;
 
-    // Insert new digital document into the database
-    const newDocument = await DigitalDocument.create({
+    // Validate all required fields
+    const requiredFields = {
+      document_type,
+      document_name,
+      document_number,
+      issue_date,
+      expiry_date,
+      document_image,
+      citizen_id,
+    };
+
+    const missingFields = Object.entries(requiredFields)
+      .filter(([_, value]) => !value)
+      .map(([key]) => key);
+
+    if (missingFields.length > 0) {
+      return res.status(400).json({
+        success: false,
+        message: `Missing required fields: ${missingFields.join(", ")}`,
+      });
+    }
+
+    const newDocument = await DocumentModel.create({
       document_name,
       document_type,
       document_number,
+      issue_date,
       expiry_date,
       document_image,
+      citizen_id,
+      status: "Issued",
     });
 
     res.status(201).json({
+      success: true,
       message: "Digital document created successfully",
       document: newDocument,
     });
   } catch (error) {
-    res.status(500).json({ message: "Server error", error: error.message });
+    console.error("Document creation error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to create document",
+      error: error.message,
+    });
   }
 };
 
 const deleteDigitalDocument = async (req, res) => {
   try {
-    const { national_id, document_id } = req.params; // Assuming both are passed as route parameters
+    const { document_id } = req.params; // Changed from national_id to document_id
 
-    // Find and delete the document
-    const deletedDocument = await DigitalDocument.destroy({
-      where: { id: national_id, document_id: document_id },
-    });
-
-    if (!deletedDocument) {
-      return res.status(404).json({ message: "Digital document not found." });
+    if (!mongoose.Types.ObjectId.isValid(document_id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid document ID format",
+      });
     }
 
-    res.status(200).json({ message: "Digital document deleted successfully." });
+    const deletedDocument = await DocumentModel.findByIdAndDelete(document_id);
+
+    if (!deletedDocument) {
+      return res.status(404).json({
+        success: false,
+        message: "Digital document not found",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Digital document deleted successfully",
+    });
   } catch (error) {
-    res.status(500).json({ message: "Server error", error: error.message });
+    res.status(500).json({
+      success: false,
+      message: "Server error",
+      error: error.message,
+    });
   }
 };
 
 module.exports = {
-  getAllDigitalDocument,
+  getAllMyDocuments,
   createDigitalDocument,
   deleteDigitalDocument,
 };

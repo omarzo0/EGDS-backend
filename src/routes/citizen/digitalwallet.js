@@ -1,6 +1,6 @@
 const express = require("express");
 const {
-  getAllDigitalDocument,
+  getAllMyDocuments,
   createDigitalDocument,
   deleteDigitalDocument,
 } = require("../../controller/citizen/digitalwallet");
@@ -10,22 +10,22 @@ const { citizenIsAuth } = require("../../middleware/auth");
 const router = express.Router();
 
 router.get(
-  "/digital-document",
-  citizenIsAuth,
+  "/digital-document-list/:citizen_id",
+  // citizenIsAuth,
   changeLanguage,
-  getAllDigitalDocument
+  getAllMyDocuments
 );
 
 router.post(
   "/digital-document",
-  citizenIsAuth,
+  // citizenIsAuth,
   changeLanguage,
   createDigitalDocument
 );
 
 router.delete(
-  "/digital-document/:id",
-  citizenIsAuth,
+  "/delete-document/:document_id",
+  // citizenIsAuth,
   changeLanguage,
   deleteDigitalDocument
 );

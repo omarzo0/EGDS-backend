@@ -96,9 +96,20 @@ const deleteDepartment = async (req, res) => {
   }
 };
 
+const getDepartmentCount = async (req, res) => {
+  try {
+    const count = await DepartmentModel.countDocuments();
+    res.status(200).json(count);
+  } catch (error) {
+    res
+      .status(500)
+      .json({ message: "Failed to fetch department count", error });
+  }
+};
 module.exports = {
   getAllDepartment,
   createDepartment,
   updateDepartment,
   deleteDepartment,
+  getDepartmentCount,
 };

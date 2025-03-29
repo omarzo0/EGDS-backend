@@ -7,6 +7,7 @@ const {
   createDepartment,
   updateDepartment,
   deleteDepartment,
+  getDepartmentCount,
 } = require("../../controller/admin/department");
 
 const router = express.Router();
@@ -17,6 +18,13 @@ router.get(
   // changeLanguage,
   // adminAllowedTo([AdminRole.SUPER_ADMIN, AdminRole.ADMIN]),
   getAllDepartment
+);
+router.get(
+  "/department-count",
+  // adminIsAuth,
+  // changeLanguage,
+  // adminAllowedTo([AdminRole.SUPER_ADMIN, AdminRole.ADMIN]),
+  getDepartmentCount
 );
 router.post(
   "/create-department",
