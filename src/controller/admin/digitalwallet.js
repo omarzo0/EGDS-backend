@@ -7,7 +7,8 @@ const getAllDigitalDocument = async (req, res) => {
     const documents = await DocumentModel.find()
       .populate({
         path: "citizen_id",
-        select: "first_name email national_id createdAt wallet_status id",
+        select:
+          "first_name email national_id createdAt wallet_status id document_number document_image",
       })
       .sort({ createdAt: -1 });
 
@@ -39,6 +40,7 @@ const getAllDigitalDocument = async (req, res) => {
         status: doc.status,
         created_at: doc.createdAt,
         expiry_date: doc.expiry_date,
+        document_image: doc.document_image,
       });
     });
 
@@ -60,73 +62,134 @@ const getAllDigitalDocument = async (req, res) => {
     });
   }
 };
+const getDigitalWalletById = async (req, res) => {
+  try {
+    const { id } = req.params;
 
+    // Validate wallet ID format
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        status: "error",
+        error: {
+          code: 400,
+          message: "Invalid wallet ID format",
+        },
+      });
+    }
+
+    // Find the citizen first
+    const citizen = await CitizenModel.findById(id);
+    if (!citizen) {
+      return res.status(404).json({
+        status: "error",
+        error: {
+          code: 404,
+          message: "Citizen wallet not found",
+        },
+      });
+    }
+
+    // Find all documents for this citizen
+    const documents = await DocumentModel.find({ citizen_id: id }).sort({
+      createdAt: -1,
+    });
+
+    // Transform the data to match your frontend structure
+    const responseData = {
+      citizen: {
+        first_name: citizen.first_name,
+        wallet_id: citizen._id,
+        email: citizen.email,
+        national_id: citizen.national_id,
+        account_created: citizen.createdAt,
+        wallet_status: citizen.wallet_status || "active",
+      },
+      documents: documents.map((doc) => ({
+        id: doc._id,
+        name: doc.document_name,
+        type: doc.document_type,
+        number: doc.document_number,
+        status: doc.status,
+        created_at: doc.createdAt,
+        expiry_date: doc.expiry_date,
+        document_image: doc.document_image,
+      })),
+    };
+
+    res.status(200).json({
+      success: true,
+      data: responseData,
+    });
+  } catch (error) {
+    console.error("Wallet details fetch error:", error);
+    res.status(500).json({
+      status: "error",
+      error: {
+        code: 500,
+        message: "Failed to retrieve wallet details",
+        error:
+          process.env.NODE_ENV === "development" ? error.message : undefined,
+      },
+    });
+  }
+};
 const UpdateDigitalDocumentStatus = async (req, res) => {
   try {
     const { id } = req.params;
     const { status } = req.body;
 
-    // Validate document ID format
-    if (!id || !mongoose.isValidObjectId(id)) {
+    // Validate document ID
+    if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({
-        status: "error",
-        error: {
-          code: 400,
-          message: "Invalid document ID format",
-        },
+        success: false,
+        error: "Invalid document ID format",
       });
     }
 
-    // Validate status input
-    const validStatuses = ["Issued", "Pending", "Revoked", "finished"];
-    if (!status || !validStatuses.includes(status)) {
+    // Status mapping from frontend to backend
+    const statusMap = {
+      approve: "Issued",
+      reject: "Revoked",
+      pending: "Pending",
+    };
+
+    const backendStatus = statusMap[status] || status;
+
+    // Validate status
+    if (!["Issued", "Pending", "Revoked", "finished"].includes(backendStatus)) {
       return res.status(400).json({
-        status: "error",
-        error: {
-          code: 400,
-          message: `Invalid status. Valid values are: ${validStatuses.join(
-            ", "
-          )}`,
-        },
+        success: false,
+        error: "Invalid status value",
       });
     }
 
-    // Find document first to get previous status
-    const document = await DocumentModel.findById(id);
-    if (!document) {
+    // Update document
+    const updatedDoc = await DocumentModel.findByIdAndUpdate(
+      id,
+      { status: backendStatus },
+      { new: true }
+    );
+
+    if (!updatedDoc) {
       return res.status(404).json({
-        status: "error",
-        error: {
-          code: 404,
-          message: "Document not found",
-        },
+        success: false,
+        error: "Document not found",
       });
     }
 
-    const previousStatus = document.status;
-
-    // Update the document status
-    document.status = status;
-    const updatedDocument = await document.save();
-
-    // Successful response
     res.status(200).json({
-      id: updatedDocument._id,
-      name: updatedDocument.document_name,
-      type: updatedDocument.document_type,
-      status: updatedDocument.status,
-      previous_status: previousStatus,
-      updated_at: updatedDocument.updatedAt,
+      success: true,
+      data: {
+        id: updatedDoc._id,
+        status: updatedDoc.status,
+        updatedAt: updatedDoc.updatedAt,
+      },
     });
   } catch (error) {
     console.error("Status update error:", error);
     res.status(500).json({
-      status: "error",
-      error: {
-        code: 500,
-        message: "Internal server error",
-        error: error.message,
-      },
+      success: false,
+      error: "Internal server error",
     });
   }
 };
@@ -417,4 +480,5 @@ module.exports = {
   getDigitalWalletStatistics,
   suspendDigitalWallet,
   unsuspendDigitalWallet,
+  getDigitalWalletById,
 };

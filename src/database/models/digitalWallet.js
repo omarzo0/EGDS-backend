@@ -25,6 +25,7 @@ const documentSchema = new mongoose.Schema(
     status: {
       type: String,
       enum: ["Issued", "Pending", "Revoked", "finished"],
+      default: "Pending",
       required: true,
     },
     citizen_id: {

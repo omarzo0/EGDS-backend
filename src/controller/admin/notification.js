@@ -139,20 +139,30 @@ const sendNotificationToAdminsByType = async (req, res) => {
       });
     }
 
-    // Fetch admins based on role
-    const admins = await AdminModel.find({ role }, "_id").session(session);
+    // Normalize the role value to match your database
+    const normalizedRole =
+      role.toLowerCase() === "superadmin" ? "SUPER_ADMIN" : role.toUpperCase();
+
+    // Fetch admins based on role - ensure this matches your AdminModel schema
+    const admins = await AdminModel.find(
+      { role: normalizedRole },
+      "_id role"
+    ).session(session);
+
+    console.log(`Found ${admins.length} admins with role ${normalizedRole}`); // Debug log
 
     if (!admins.length) {
       await session.abortTransaction();
-      return res
-        .status(404)
-        .json({ success: false, message: `No ${role} found to notify` });
+      return res.status(404).json({
+        success: false,
+        message: `No admins with role ${role} found`,
+      });
     }
 
     const notifications = admins.map((admin) => ({
       recipient: admin._id,
-      recipientType: "Admin", // Set recipientType to "Admin"
-      role,
+      recipientType: "Admin",
+      role: admin.role, // Use the actual role from the admin document
       title,
       message,
       status: "Sent",
@@ -166,6 +176,10 @@ const sendNotificationToAdminsByType = async (req, res) => {
     return res.status(200).json({
       success: true,
       message: `Notifications sent to ${admins.length} ${role}(s)`,
+      data: {
+        count: admins.length,
+        role: normalizedRole,
+      },
     });
   } catch (error) {
     await session.abortTransaction();
@@ -179,10 +193,122 @@ const sendNotificationToAdminsByType = async (req, res) => {
     session.endSession();
   }
 };
+const sendNotificationToAdmin = async (req, res) => {
+  try {
+    const { adminId } = req.params;
+    const { title, message } = req.body;
 
+    // Validate admin ID format
+    if (!mongoose.Types.ObjectId.isValid(adminId)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid admin ID format",
+      });
+    }
+
+    // Check if required fields are present
+    if (!title || !message) {
+      return res.status(400).json({
+        success: false,
+        message: "Title and message are required",
+      });
+    }
+
+    // Verify admin exists
+    const adminExists = await AdminModel.exists({ _id: adminId });
+    if (!adminExists) {
+      return res.status(404).json({
+        success: false,
+        message: "Admin not found",
+      });
+    }
+
+    // Create and save the notification
+    const notification = await NotificationModel.create({
+      recipient: adminId,
+      recipientType: "Admin",
+      title,
+      message,
+      status: "Sent",
+      senderType: "System", // or "Admin" if sent by another admin
+    });
+
+    return res.status(201).json({
+      success: true,
+      message: "Notification sent to admin successfully",
+      data: notification,
+    });
+  } catch (error) {
+    console.error("Error sending notification to admin:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to send notification to admin",
+      error: error.message,
+    });
+  }
+};
+const sendNotificationToAllAdmins = async (req, res) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
+  try {
+    const { title, message } = req.body;
+
+    if (!title || !message) {
+      await session.abortTransaction();
+      return res.status(400).json({
+        success: false,
+        message: "Title and message are required",
+      });
+    }
+
+    // Fetch all admins
+    const admins = await AdminModel.find({}, "_id").session(session);
+
+    if (!admins.length) {
+      await session.abortTransaction();
+      return res.status(404).json({
+        success: false,
+        message: "No admins found to notify",
+      });
+    }
+
+    // Prepare notifications for all admins
+    const notifications = admins.map((admin) => ({
+      recipient: admin._id,
+      recipientType: "Admin",
+      title,
+      message,
+      status: "Sent",
+      senderType: "System",
+      createdAt: new Date(),
+    }));
+
+    // Bulk insert notifications
+    await NotificationModel.insertMany(notifications, { session });
+    await session.commitTransaction();
+
+    res.status(200).json({
+      success: true,
+      message: `Notifications sent to ${admins.length} admins`,
+    });
+  } catch (error) {
+    await session.abortTransaction();
+    console.error("Error sending notifications to all admins:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to send notifications to admins",
+      error: error.message,
+    });
+  } finally {
+    session.endSession();
+  }
+};
 module.exports = {
   sendNotificationToCitizen,
   sendNotificationToAllCitizens,
   sendNotificationToAdminsByType,
   getNotificationsForAdmin,
+  sendNotificationToAdmin,
+  sendNotificationToAllAdmins,
 };
