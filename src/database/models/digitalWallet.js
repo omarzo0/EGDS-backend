@@ -33,6 +33,18 @@ const documentSchema = new mongoose.Schema(
       ref: "Citizen",
       required: true,
     },
+    expiration_status: {
+      type: String,
+      enum: ["Valid", "Expires Soon", "Expired"],
+      default: "Valid",
+    },
+    reminder_sent: {
+      type: Boolean,
+      default: false,
+    },
+    last_reminder_sent: {
+      type: Date,
+    },
   },
   { timestamps: true }
 );
@@ -53,6 +65,22 @@ documentSchema.post("save", async function (doc) {
   await CitizenModel.findByIdAndUpdate(citizenId, {
     wallet_status: walletStatus,
   });
+});
+documentSchema.pre("save", function (next) {
+  const now = new Date();
+  const expiryDate = this.expiry_date;
+  const timeDiff = expiryDate.getTime() - now.getTime();
+  const daysDiff = Math.ceil(timeDiff / (1000 * 3600 * 24));
+
+  if (daysDiff <= 0) {
+    this.expiration_status = "Expired";
+  } else if (daysDiff <= 30) {
+    this.expiration_status = "Expires Soon";
+  } else {
+    this.expiration_status = "Valid";
+  }
+
+  next();
 });
 const DocumentModel =
   mongoose.models.Document || mongoose.model("Document", documentSchema);

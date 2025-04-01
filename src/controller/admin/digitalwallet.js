@@ -2,6 +2,46 @@ const DocumentModel = require("../../database/models/digitalWallet");
 const { CitizenModel } = require("../../database/models/citizen");
 const mongoose = require("mongoose");
 
+const formatExpirationData = (document) => {
+  const now = new Date();
+  const expiryDate = document.expiry_date;
+  const timeDiff = expiryDate.getTime() - now.getTime();
+  const daysDiff = Math.ceil(timeDiff / (1000 * 3600 * 24));
+
+  // Format the date as "March 5th, 2025"
+  const options = { year: "numeric", month: "long", day: "numeric" };
+  const formattedDate = expiryDate
+    .toLocaleDateString("en-US", options)
+    .replace(/(\d+)/, (match) => {
+      const day = parseInt(match);
+      let suffix = "th";
+      if (day % 10 === 1 && day !== 11) suffix = "st";
+      if (day % 10 === 2 && day !== 12) suffix = "nd";
+      if (day % 10 === 3 && day !== 13) suffix = "rd";
+      return day + suffix;
+    });
+
+  let statusText = "Valid";
+  let daysText = `Valid for ${daysDiff} days`; // Default message for valid documents
+
+  if (daysDiff <= 0) {
+    statusText = "Expired";
+    daysText = `Expired ${Math.abs(daysDiff)} days ago`;
+  } else if (daysDiff <= 30) {
+    statusText = "Expires Soon";
+    daysText = `Expires in ${daysDiff} days`;
+  } else if (daysDiff <= 60) {
+    daysText = `Valid for ${daysDiff} days (${Math.floor(
+      daysDiff / 30
+    )} months)`;
+  }
+
+  return {
+    statusText,
+    formattedDate,
+    daysText,
+  };
+};
 const getAllDigitalDocument = async (req, res) => {
   try {
     const documents = await DocumentModel.find()
@@ -12,10 +52,13 @@ const getAllDigitalDocument = async (req, res) => {
       })
       .sort({ createdAt: -1 });
 
-    // Group documents by citizen
     const citizensMap = new Map();
 
     documents.forEach((doc) => {
+      if (!doc.citizen_id) {
+        return;
+      }
+
       const citizenId = doc.citizen_id._id.toString();
 
       if (!citizensMap.has(citizenId)) {
@@ -31,6 +74,7 @@ const getAllDigitalDocument = async (req, res) => {
           documents: [],
         });
       }
+      const expirationData = formatExpirationData(doc);
 
       citizensMap.get(citizenId).documents.push({
         id: doc._id,
@@ -41,6 +85,9 @@ const getAllDigitalDocument = async (req, res) => {
         created_at: doc.createdAt,
         expiry_date: doc.expiry_date,
         document_image: doc.document_image,
+        expiration_status: expirationData.statusText,
+        formatted_expiry: expirationData.formattedDate,
+        days_text: expirationData.daysText,
       });
     });
 
@@ -49,8 +96,8 @@ const getAllDigitalDocument = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      wallet_count: citizensMap.size, // This gives the count of unique wallets
-      document_count: documents.length, // Keep document count if needed
+      wallet_count: citizensMap.size,
+      document_count: documents.length,
       citizens: result,
     });
   } catch (error) {
@@ -104,16 +151,22 @@ const getDigitalWalletById = async (req, res) => {
         account_created: citizen.createdAt,
         wallet_status: citizen.wallet_status || "active",
       },
-      documents: documents.map((doc) => ({
-        id: doc._id,
-        name: doc.document_name,
-        type: doc.document_type,
-        number: doc.document_number,
-        status: doc.status,
-        created_at: doc.createdAt,
-        expiry_date: doc.expiry_date,
-        document_image: doc.document_image,
-      })),
+      documents: documents.map((doc) => {
+        const expirationData = formatExpirationData(doc);
+        return {
+          id: doc._id,
+          name: doc.document_name,
+          type: doc.document_type,
+          number: doc.document_number,
+          status: doc.status,
+          created_at: doc.createdAt,
+          expiry_date: doc.expiry_date,
+          document_image: doc.document_image,
+          expiration_status: expirationData.statusText,
+          formatted_expiry: expirationData.formattedDate,
+          days_text: expirationData.daysText,
+        };
+      }),
     };
 
     res.status(200).json({
@@ -133,6 +186,7 @@ const getDigitalWalletById = async (req, res) => {
     });
   }
 };
+
 const UpdateDigitalDocumentStatus = async (req, res) => {
   try {
     const { id } = req.params;

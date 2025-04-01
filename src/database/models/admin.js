@@ -13,7 +13,12 @@ const adminSchema = new mongoose.Schema(
     first_name: { type: String, required: true },
     last_name: { type: String, required: true },
     email: { type: String, required: true, unique: true, lowercase: true },
-    password: { type: String, required: true },
+    password: {
+      type: String,
+      required: true,
+    },
+    otp: String,
+    otpExpiry: Date,
     phone_number: { type: String, required: true, unique: true },
     national_id: { type: String, required: true, unique: true },
     birthday_date: { type: Date, required: true },

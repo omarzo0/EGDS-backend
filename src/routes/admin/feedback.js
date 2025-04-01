@@ -11,9 +11,10 @@ const router = express.Router();
 
 router.get(
   "/feedback",
-  adminIsAuth,
-  changeLanguage,
-  adminAllowedTo([AdminRole.SUPER_ADMIN, AdminRole.ADMIN], getAllFeedback)
+  // adminIsAuth,
+  // changeLanguage,
+  // adminAllowedTo([AdminRole.SUPER_ADMIN, AdminRole.ADMIN]),
+  getAllFeedback
 );
 router.put(
   "/:feedbackId/status",
