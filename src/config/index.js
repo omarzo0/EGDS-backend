@@ -24,6 +24,13 @@ const Config = {
   JWT_CITIZEN_SECRET: process.env["JWT_CITIZEN_SECRET"],
   JWT_ADMIN_SECRET_EXP: process.env["JWT_ADMIN_SECRET_EXP"],
   JWT_CITIZEN_SECRET_EXP: process.env["JWT_CITIZEN_SECRET_EXP"],
+  EMAIL_HOST: process.env["EMAIL_HOST"],
+  EMAIL_PORT: process.env["EMAIL_PORT"],
+  EMAIL_SECURE: process.env["EMAIL_SECURE"],
+  EMAIL_USER: process.env["EMAIL_USER"],
+  EMAIL_PASSWORD: process.env["EMAIL_PASSWORD"],
+  EMAIL_FROM_NAME: process.env["EMAIL_FROM_NAME"],
+  EMAIL_FROM_ADDRESS: process.env["EMAIL_FROM_ADDRESS"],
 };
 
 module.exports = {

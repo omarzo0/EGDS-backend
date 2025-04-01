@@ -56,11 +56,9 @@ const forgotPassword = async (req, res) => {
   try {
     const { email } = req.body;
     const normalizedEmail = email.toLowerCase();
-    console.log(`Password reset requested for: ${email}`);
 
     const admin = await AdminModel.findOne({ email: normalizedEmail });
     if (!admin) {
-      console.log("Admin not found for email:", email);
       throw ApiError.notFound("Admin not found");
     }
 
@@ -69,31 +67,43 @@ const forgotPassword = async (req, res) => {
     admin.otpExpiry = Date.now() + 10 * 60 * 1000;
     await admin.save();
 
-    console.log("OTP generated and saved for admin:", admin._id);
-
     const transporter = nodemailer.createTransport({
-      host: "smtp-relay.brevo.com",
-      port: 587,
+      host: Config.EMAIL_HOST,
+      port: Config.EMAIL_PORT,
       secure: false,
-      auth: { user: "88cdcc001@smtp-brevo.com", pass: "yNK7Z6f81w2XsDjm" },
+      auth: {
+        user: Config.EMAIL_USER,
+        pass: Config.EMAIL_PASSWORD,
+      },
+      connectionTimeout: 5000,
+      socketTimeout: 5000,
     });
 
+    // Verify connection
+    try {
+      await transporter.verify();
+      console.log("SMTP connection verified");
+    } catch (verifyError) {
+      console.error("SMTP connection failed:", verifyError);
+      throw new ApiError(503, "Email service is currently unavailable");
+    }
+
     const mailOptions = {
-      from: '"E-Government Documentation System" <omarkhaled202080@gmail.com>',
+      from: `"${Config.EMAIL_FROM_NAME}" <${Config.EMAIL_FROM_ADDRESS}>`,
       to: normalizedEmail,
       subject: "Password Reset OTP - E-Government Documentation System",
       text: `Your OTP for password reset is: ${otp}`,
       html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #2c3e50;">Password Reset Request</h2>
-          <p>You requested a password reset for your E-Government Documentation System account.</p>
-          <p style="font-size: 18px; font-weight: bold;">Your OTP code is: <span style="color: #e74c3c;">${otp}</span></p>
-          <p>This code will expire in 10 minutes.</p>
-          <p>If you didn't request this, please ignore this email.</p>
-          <hr style="border: 0; border-top: 1px solid #eee;">
-          <p style="font-size: 12px; color: #7f8c8d;">E-Government Documentation System Team</p>
-        </div>
-      `,
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #2c3e50;">Password Reset Request</h2>
+        <p>You requested a password reset for your E-Government Documentation System account.</p>
+        <p style="font-size: 18px; font-weight: bold;">Your OTP code is: <span style="color: #e74c3c;">${otp}</span></p>
+        <p>This code will expire in 10 minutes.</p>
+        <p>If you didn't request this, please ignore this email.</p>
+        <hr style="border: 0; border-top: 1px solid #eee;">
+        <p style="font-size: 12px; color: #7f8c8d;">E-Government Documentation System Team</p>
+      </div>
+    `,
       headers: {
         "X-Mailer": "Node.js",
         "X-Priority": "1", // High priority
@@ -101,12 +111,26 @@ const forgotPassword = async (req, res) => {
     };
 
     await transporter.sendMail(mailOptions);
-    res.status(HttpStatus.Ok).json(successResponseFormat("OTP sent"));
+    res.status(200).json(successResponseFormat("OTP sent successfully"));
   } catch (err) {
-    console.error("Email send error:", err);
-    res
-      .status(err.code || 500)
-      .json(errorResponseFormat(err.code, "Failed to send OTP."));
+    console.error("Forgot password error:", err);
+
+    // Handle different error cases
+    let statusCode = err.code || 500;
+    let message = err.message || "Internal Server Error";
+
+    if (err.code === "ESOCKET" || err.code === "ECONNECTION") {
+      statusCode = 503;
+      message = "Email service is currently unavailable";
+    }
+
+    res.status(statusCode).json({
+      status: "error",
+      error: {
+        code: statusCode,
+        message: message,
+      },
+    });
   }
 };
 
@@ -129,7 +153,6 @@ const resetPassword = async (req, res) => {
       throw new ApiError(400, "Invalid or expired OTP");
     }
 
-    // Set the plain text password - the pre-save hook will hash it
     admin.password = newPassword;
     admin.otp = undefined;
     admin.otpExpiry = undefined;
