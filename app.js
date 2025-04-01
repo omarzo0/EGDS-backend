@@ -59,7 +59,9 @@ function initRoutes(app) {
     res.send("Server is running......");
   });
 }
-
+if (process.env.NODE_ENV !== "test") {
+  require("./src/utils/expirationChecker");
+}
 function initMiddlewares(app) {
   app.use(cors());
   app.use(express.json());

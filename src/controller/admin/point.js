@@ -2,7 +2,9 @@ const ServiceModel = require("../../database/models/services");
 const asyncHandler = require("express-async-handler");
 
 const getAllServices = asyncHandler(async (req, res) => {
-  const services = await ServiceModel.find({}).select("name points").lean();
+  const services = await ServiceModel.find({})
+    .select("name points Description")
+    .lean();
 
   res.status(200).json({
     success: true,

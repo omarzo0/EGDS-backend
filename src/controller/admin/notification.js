@@ -304,6 +304,53 @@ const sendNotificationToAllAdmins = async (req, res) => {
     session.endSession();
   }
 };
+const sendExpirationNotification = async (document, daysUntilExpiry) => {
+  let title, message;
+
+  switch (daysUntilExpiry) {
+    case 45:
+      title = "Document Expiration Reminder (45 Days)";
+      message = `Your ${document.document_type} (${
+        document.document_number
+      }) will expire on ${document.expiry_date.toDateString()}. Please renew it soon.`;
+      break;
+    case 30:
+      title = "Document Expiration Reminder (30 Days)";
+      message = `Your ${
+        document.document_type
+      } is expiring in 30 days (${document.expiry_date.toDateString()}).`;
+      break;
+    case 15:
+      title = "Urgent: Document Expiring Soon (15 Days)";
+      message = `Your ${document.document_type} will expire in 15 days! Renew now to avoid issues.`;
+      break;
+    case 5:
+      title = "Final Reminder: Document Expiring (5 Days)";
+      message = `IMPORTANT: Your ${
+        document.document_type
+      } expires in 5 days on ${document.expiry_date.toDateString()}.`;
+      break;
+    default:
+      return;
+  }
+
+  try {
+    await NotificationModel.create({
+      recipient: document.citizen_id,
+      recipientType: "Citizen",
+      title,
+      message,
+      status: "Sent",
+    });
+
+    // Mark notification as sent
+    await DocumentModel.findByIdAndUpdate(document._id, {
+      reminder_sent: true,
+    });
+  } catch (error) {
+    console.error(`Failed to send ${daysUntilExpiry}-day notification:`, error);
+  }
+};
 module.exports = {
   sendNotificationToCitizen,
   sendNotificationToAllCitizens,
@@ -311,4 +358,5 @@ module.exports = {
   getNotificationsForAdmin,
   sendNotificationToAdmin,
   sendNotificationToAllAdmins,
+  sendExpirationNotification,
 };

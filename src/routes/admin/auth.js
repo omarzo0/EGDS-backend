@@ -17,13 +17,13 @@ router.post("/login", validateBody(adminLoginSchema), adminLogin);
 
 router.post(
   "/forgot-password",
-  validateBody(forgotPasswordSchema),
+  // validateBody(forgotPasswordSchema),
   forgotPassword
 );
 
 router.post(
   "/reset-password",
-  validateBody(resetPasswordSchema),
+  // validateBody(resetPasswordSchema),
   resetPassword
 );
 

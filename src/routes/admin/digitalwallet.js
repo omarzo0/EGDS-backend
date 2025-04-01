@@ -37,6 +37,7 @@ router.get(
   // adminAllowedTo([AdminRole.SUPER_ADMIN, AdminRole.ADMIN]),
   getDigitalWalletStatistics
 );
+
 router.put(
   "/digital-document/:id",
   // adminIsAuth,
