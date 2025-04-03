@@ -21,7 +21,7 @@ async function testBrevoSMTP() {
     // Use either a verified sender or Brevo's domain
     const info = await transporter.sendMail({
       from: '"E-Government Documentation system" <omarkhaled202080@gmail.com>', // Temporary solution
-      // from: '"Your App" <no-reply@yourdomain.com>', // After verification
+
       to: "omarkhaled202080@gmail.com",
       subject: "E-Government Documentation system",
       text: "This email should now be delivered",
