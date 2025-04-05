@@ -5,7 +5,7 @@ const notificationSchema = new mongoose.Schema(
     recipient: {
       type: mongoose.Schema.Types.ObjectId,
       required: true,
-      refPath: "recipientType", // Dynamically determines the model based on recipientType
+      refPath: "recipientType",
     },
     recipientType: {
       type: String,
@@ -18,11 +18,20 @@ const notificationSchema = new mongoose.Schema(
     },
     message: {
       type: String,
+      required: true,
     },
     status: {
       type: String,
       enum: ["Pending", "Sent", "Failed", "Read"],
-      default: "Pending",
+      default: "Sent",
+    },
+    read: {
+      type: Boolean,
+      default: false,
+    },
+    createdAt: {
+      type: Date,
+      default: Date.now,
     },
   },
   {

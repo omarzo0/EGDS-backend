@@ -108,7 +108,9 @@ const getNotificationsForAdmin = async (req, res) => {
     const notifications = await NotificationModel.find({
       recipient: adminId,
       recipientType: "Admin",
-    }).sort({ createdAt: -1 }); // Sort by latest first
+    })
+      .sort({ createdAt: -1 })
+      .lean();
 
     return res.status(200).json({
       success: true,
@@ -141,15 +143,18 @@ const sendNotificationToAdminsByType = async (req, res) => {
 
     // Normalize the role value to match your database
     const normalizedRole =
-      role.toLowerCase() === "superadmin" ? "SUPER_ADMIN" : role.toUpperCase();
-
+      role.toLowerCase().replace(/\s+/g, " ") === "super admin"
+        ? "super admin"
+        : role.toLowerCase() === "admin"
+        ? "admin"
+        : role.toLowerCase() === "officer"
+        ? "officer"
+        : role.toLowerCase();
     // Fetch admins based on role - ensure this matches your AdminModel schema
     const admins = await AdminModel.find(
       { role: normalizedRole },
       "_id role"
     ).session(session);
-
-    console.log(`Found ${admins.length} admins with role ${normalizedRole}`); // Debug log
 
     if (!admins.length) {
       await session.abortTransaction();
@@ -351,6 +356,69 @@ const sendExpirationNotification = async (document, daysUntilExpiry) => {
     console.error(`Failed to send ${daysUntilExpiry}-day notification:`, error);
   }
 };
+const countUnreadNotificationsForAdmin = async (req, res) => {
+  try {
+    const { adminId } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(adminId)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid Admin ID format",
+      });
+    }
+
+    const count = await NotificationModel.countDocuments({
+      recipient: new mongoose.Types.ObjectId(adminId),
+      recipientType: "Admin",
+      read: false,
+      status: "Sent", // Only count successfully sent notifications
+    });
+
+    return res.status(200).json({
+      success: true,
+      data: { count },
+    });
+  } catch (error) {
+    console.error("Error counting notifications:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};
+
+const markAllNotificationsRead = async (req, res) => {
+  try {
+    const { adminId } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(adminId)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid Admin ID format",
+      });
+    }
+
+    const result = await NotificationModel.updateMany(
+      {
+        recipient: new mongoose.Types.ObjectId(adminId),
+        recipientType: "Admin",
+        read: false,
+      },
+      { $set: { read: true } }
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: `${result.modifiedCount} notifications marked as read`,
+    });
+  } catch (error) {
+    console.error("Error marking notifications as read:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};
 module.exports = {
   sendNotificationToCitizen,
   sendNotificationToAllCitizens,
@@ -359,4 +427,7 @@ module.exports = {
   sendNotificationToAdmin,
   sendNotificationToAllAdmins,
   sendExpirationNotification,
+  countUnreadNotificationsForAdmin,
+
+  markAllNotificationsRead,
 };
