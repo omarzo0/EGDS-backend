@@ -66,9 +66,11 @@ documentSchema.post("save", async function (doc) {
     wallet_status: walletStatus,
   });
 });
+
+// In your document model file
 documentSchema.pre("save", function (next) {
   const now = new Date();
-  const expiryDate = this.expiry_date;
+  const expiryDate = new Date(this.expiry_date);
   const timeDiff = expiryDate.getTime() - now.getTime();
   const daysDiff = Math.ceil(timeDiff / (1000 * 3600 * 24));
 
@@ -76,6 +78,37 @@ documentSchema.pre("save", function (next) {
     this.expiration_status = "Expired";
   } else if (daysDiff <= 30) {
     this.expiration_status = "Expires Soon";
+
+    // Send automatic reminder if not already sent or if it's been a while
+    const shouldSendReminder =
+      !this.reminder_sent ||
+      (this.last_reminder_sent &&
+        now - new Date(this.last_reminder_sent) > 7 * 24 * 60 * 60 * 1000); // 1 week
+
+    if (shouldSendReminder && this.citizen_id) {
+      // In a real app, you might want to queue this instead of doing it synchronously
+      this.reminder_sent = true;
+      this.last_reminder_sent = now;
+
+      // Get citizen email (in a real app, you'd populate this)
+      CitizenModel.findById(this.citizen_id)
+        .then((citizen) => {
+          if (citizen && citizen.email) {
+            sendReminderEmail(
+              {
+                document_name: this.document_name,
+                document_type: this.document_type,
+                document_number: this.document_number,
+                days_remaining: daysDiff,
+              },
+              citizen.email
+            );
+          }
+        })
+        .catch((err) =>
+          console.error("Error sending automatic reminder:", err)
+        );
+    }
   } else {
     this.expiration_status = "Valid";
   }

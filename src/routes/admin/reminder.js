@@ -3,25 +3,25 @@ const { changeLanguage } = require("../../middleware/language");
 const { adminAllowedTo, adminIsAuth } = require("../../middleware/auth");
 const { AdminRole } = require("../../database/models/admin");
 const {
-  getAllFeedback,
-  updateFeedbackStatus,
-} = require("../../controller/admin/feedback");
+  getDocumentsWithStats,
+  sendManualReminders,
+} = require("../../controller/admin/reminder");
 
 const router = express.Router();
 
 router.get(
-  "/feedback",
+  "/documents/with-stats",
   // adminIsAuth,
   // changeLanguage,
   // adminAllowedTo([AdminRole.SUPER_ADMIN, AdminRole.ADMIN]),
-  getAllFeedback
+  getDocumentsWithStats
 );
-router.put(
-  "/:feedbackId/status",
-  adminIsAuth,
-  changeLanguage,
-  adminAllowedTo([AdminRole.SUPER_ADMIN, AdminRole.ADMIN]),
-  updateFeedbackStatus
+router.post(
+  "/send-reminders",
+  // adminIsAuth,
+  // changeLanguage,
+  // adminAllowedTo([AdminRole.SUPER_ADMIN, AdminRole.ADMIN]),
+  sendManualReminders
 );
 
 module.exports = router;

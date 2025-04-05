@@ -10,9 +10,11 @@ const {
   getNotificationsForAdmin,
   sendNotificationToAdmin,
   sendNotificationToAllAdmins,
+  countUnreadNotificationsForAdmin,
+  markAllNotificationsRead,
 } = require("../../controller/admin/notification");
 
-// Create new notification
+// Create new notification done
 router.post(
   "/notifications/citizen/:citizenId",
   //   adminIsAuth,
@@ -20,12 +22,14 @@ router.post(
   //   adminAllowedTo([AdminRole.SUPER_ADMIN, AdminRole.ADMIN]),
   sendNotificationToCitizen
 );
+//done
 router.post(
   "/citizen-notifications",
   //   adminIsAuth,
   //   changeLanguage,
   //   adminAllowedTo([AdminRole.SUPER_ADMIN, AdminRole.ADMIN]),
   sendNotificationToAllCitizens
+  // done
 );
 router.post(
   "/notifications/admins",
@@ -40,6 +44,20 @@ router.get(
   // changeLanguage,
   // adminAllowedTo([AdminRole.SUPER_ADMIN]),
   getNotificationsForAdmin
+);
+router.get(
+  "/count/:adminId",
+  // adminIsAuth,
+  // changeLanguage,
+  // adminAllowedTo([AdminRole.SUPER_ADMIN]),
+  countUnreadNotificationsForAdmin
+);
+router.put(
+  "/notifications/mark-all-read/:adminId",
+  // adminIsAuth,
+  // changeLanguage,
+  // adminAllowedTo([AdminRole.SUPER_ADMIN]),
+  markAllNotificationsRead
 );
 router.post(
   "/send/:adminId",
