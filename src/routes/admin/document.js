@@ -14,13 +14,11 @@ const {
 const router = express.Router();
 
 router.get(
-  "/document",
-  adminIsAuth,
-  changeLanguage,
-  adminAllowedTo(
-    [AdminRole.SUPER_ADMIN, AdminRole.ADMIN, AdminRole.OFFICER],
-    getAllDocument
-  )
+  "/document-list",
+  // adminIsAuth,
+  // changeLanguage,
+  // adminAllowedTo([AdminRole.SUPER_ADMIN, AdminRole.ADMIN, AdminRole.OFFICER]),
+  getAllDocument
 );
 router.get(
   "/document-count",
@@ -38,26 +36,26 @@ router.get(
 );
 router.get(
   "/document/:id",
-  adminIsAuth,
-  changeLanguage,
-  adminAllowedTo(
-    [AdminRole.SUPER_ADMIN, AdminRole.ADMIN, AdminRole.OFFICER],
-    getDocumentListById
-  )
+  // adminIsAuth,
+  // changeLanguage,
+  // adminAllowedTo([AdminRole.SUPER_ADMIN, AdminRole.ADMIN, AdminRole.OFFICER]),
+  getDocumentListById
 );
 
 router.put(
-  "/document/:id",
-  adminIsAuth,
-  changeLanguage,
-  adminAllowedTo([AdminRole.SUPER_ADMIN, AdminRole.ADMIN], updateDocumentStatus)
+  "/update-document/:id",
+  // adminIsAuth,
+  // changeLanguage,
+  // adminAllowedTo([AdminRole.SUPER_ADMIN, AdminRole.ADMIN]),
+  updateDocumentStatus
 );
 
 router.delete(
-  "/document/:id",
-  adminIsAuth,
-  changeLanguage,
-  adminAllowedTo([AdminRole.SUPER_ADMIN, AdminRole.ADMIN], deleteDocument)
+  "/delete-document/:id",
+  // adminIsAuth,
+  // changeLanguage,
+  // adminAllowedTo([AdminRole.SUPER_ADMIN, AdminRole.ADMIN]),
+  deleteDocument
 );
 
 module.exports = router;
