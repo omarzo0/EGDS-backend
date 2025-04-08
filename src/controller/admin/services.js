@@ -168,10 +168,42 @@ const getServiceCount = async (req, res) => {
     });
   }
 };
+// Get most booked services this month
+const getMostBookedServicesThisMonth = async (req, res) => {
+  try {
+    const currentDate = new Date();
+    const firstDayOfMonth = new Date(
+      currentDate.getFullYear(),
+      currentDate.getMonth(),
+      1
+    );
+
+    // Since you're using usageCount, we'll just sort by that
+    const mostBooked = await ServiceModel.find()
+      .sort({ usageCount: -1 })
+      .limit(10)
+      .populate({
+        path: "department_id",
+        select: "name",
+      });
+
+    res.status(200).json({
+      success: true,
+      services: mostBooked,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch most booked services",
+      error: error.message,
+    });
+  }
+};
 module.exports = {
   getAllServices,
   createService,
   updateService,
   deleteService,
   getServiceCount,
+  getMostBookedServicesThisMonth,
 };

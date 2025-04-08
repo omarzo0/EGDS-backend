@@ -13,6 +13,7 @@ const serviceSchema = new mongoose.Schema(
     fees: { type: Number, required: true },
     points: { type: Number, required: true },
     processing_time: { type: String, required: true },
+    usageCount: { type: Number, default: 0 },
   },
   { timestamps: true }
 );

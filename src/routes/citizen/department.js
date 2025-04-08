@@ -6,6 +6,11 @@ const { citizenIsAuth } = require("../../middleware/auth");
 const router = express.Router();
 
 // Get all documents
-router.get("/department", citizenIsAuth, changeLanguage, getAllDepartment);
+router.get(
+  "/department-list",
+  // citizenIsAuth,
+  //   changeLanguage,
+  getAllDepartment
+);
 
 module.exports = router;
