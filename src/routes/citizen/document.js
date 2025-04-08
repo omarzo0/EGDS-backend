@@ -9,7 +9,10 @@ const { citizenIsAuth } = require("../../middleware/auth");
 const router = express.Router();
 
 // Create document
-router.post("/documents", citizenIsAuth, changeLanguage, createDocument);
+router.post("/documents", 
+  // citizenIsAuth, 
+  changeLanguage, 
+  createDocument);
 
 // Delete document
 router.delete("/documents/:id", citizenIsAuth, changeLanguage, deleteDocument);

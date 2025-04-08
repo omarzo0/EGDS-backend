@@ -16,8 +16,9 @@ const createDocument = async (req, res) => {
       preferred_contact_method,
       document_type,
       amount,
-      currency,
     } = req.body;
+
+
 
     const newDocument = await DocumentApplicationModel.create({
       citizen_id,
