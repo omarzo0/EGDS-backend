@@ -14,24 +14,24 @@ const login = async (req, res) => {
     const body = req.body;
     const { email, password } = body;
 
-    const admin = await CitizenModel.findOne({ email });
-    if (!admin) {
+    const citizen = await CitizenModel.findOne({ email });
+    if (!citizen) {
       throw ApiError.invalidEmailCredentials();
     }
-
-    const validPass = await bcrypt.compare(password, admin.password);
+    
+    const validPass = await bcrypt.compare(password, citizen.password);
     if (!validPass) {
       throw ApiError.invalidEmailCredentials();
     }
 
     const accessToken = createToken(
-      { id: admin._id.toString() },
+      { id: citizen._id.toString() },
       Config.JWT_CITIZEN_SECRET,
       Config.JWT_CITIZEN_SECRET_EXP
     );
 
     const result = successResponseFormat({
-      id: admin._id.toString(),
+      id: citizen._id.toString(),
       accessToken: accessToken,
       accessTokenExpireTime: new Date(
         parseDuration(Config.JWT_CITIZEN_SECRET_EXP)
@@ -45,14 +45,28 @@ const login = async (req, res) => {
   }
 };
 
+
 const register = async (req, res) => {
   try {
-    const { firstName, lastName, nationalId, phone, age, email, password } =
-      req.body;
+    const {
+      first_name,
+      middle_name,
+      last_name,
+      date_of_birth,
+      gender,
+      national_id,
+      address,
+      Government,
+      phone_number,
+      email,
+      password,
+      marital_status,
+    } = req.body;
 
     const existingCitizen = await CitizenModel.findOne({
-      $or: [{ email }, { nationalId }],
+      $or: [{ email }, { national_id }],
     });
+
     if (existingCitizen) {
       throw ApiError.badRequest("Email or National ID is already registered.");
     }
@@ -60,13 +74,18 @@ const register = async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const citizen = await CitizenModel.create({
-      firstName,
-      lastName,
-      nationalId,
-      phone,
-      age,
+      first_name,
+      middle_name,
+      last_name,
+      date_of_birth,
+      gender,
+      national_id,
+      address,
+      Government,
+      phone_number,
       email,
       password: hashedPassword,
+      marital_status,
     });
 
     const accessToken = createToken(
@@ -89,6 +108,7 @@ const register = async (req, res) => {
     res.status(error.error.code).json(error);
   }
 };
+
 
 const forgetPassword = async (req, res) => {
   try {
