@@ -8,6 +8,7 @@ const {
   updateService,
   deleteService,
   getServiceCount,
+  getMostBookedServicesThisMonth,
 } = require("../../controller/admin/services");
 
 const router = express.Router();
@@ -18,6 +19,13 @@ router.get(
   // changeLanguage,
   // adminAllowedTo([AdminRole.SUPER_ADMIN, AdminRole.ADMIN]),
   getAllServices
+);
+router.get(
+  "/most-services-count",
+  // adminIsAuth,
+  // changeLanguage,
+  // adminAllowedTo([AdminRole.SUPER_ADMIN, AdminRole.ADMIN]),
+  getMostBookedServicesThisMonth
 );
 router.get(
   "/services-count",
