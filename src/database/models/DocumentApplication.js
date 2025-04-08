@@ -31,7 +31,7 @@ const documentApplicationSchema = new mongoose.Schema(
     approval_date: { type: Date },
     status: {
       type: String,
-      enum: ["Pending", "Review", "Approved", "Rejected"],
+      enum: ["Pending", "Reviewed", "Approved", "Rejected"],
       required: true,
       default: "Pending",
     },
