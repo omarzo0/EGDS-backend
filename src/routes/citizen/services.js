@@ -1,16 +1,14 @@
 const express = require("express");
-const { adminIsAuth, adminAllowedTo } = require("../../middleware/auth");
 const { changeLanguage } = require("../../middleware/language");
-const { AdminRole } = require("../../database/models/admin");
 const { getAllServices } = require("../../controller/citizen/services");
 
 const router = express.Router();
 
 router.get(
-  "/services",
-  adminIsAuth,
+  "/services-list",
+
   changeLanguage,
-  adminAllowedTo([AdminRole.SUPER_ADMIN, AdminRole.ADMIN], getAllServices)
+  getAllServices
 );
 
 module.exports = router;
