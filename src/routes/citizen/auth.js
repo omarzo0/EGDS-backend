@@ -2,8 +2,8 @@ const express = require("express");
 const {
   login,
   register,
-  forgetPassword,
-  resetPassword
+  forgotPassword,
+  resetPassword,
 } = require("../../controller/citizen/auth.js");
 const { validateBody } = require("../../middleware/validation.js");
 const { citizenLoginSchema } = require("../../validation/citizen/auth.js");
@@ -17,6 +17,6 @@ router.post("/login", validateBody(citizenLoginSchema), login);
 router.post("/register", register);
 
 // Forget Password
-router.post("/forget-password", forgetPassword);
+router.post("/forget-password", forgotPassword);
 router.post("/reset-password", resetPassword);
 module.exports = router;

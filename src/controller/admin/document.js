@@ -1,14 +1,24 @@
 const {
   DocumentApplicationModel,
 } = require("../../database/models/DocumentApplication");
+const mongoose = require("mongoose");
 
 // Get all document applications
 const getAllDocument = async (req, res) => {
   try {
     const documents = await DocumentApplicationModel.find()
-      .populate("citizen_id", "first_name last_name email phone_number")
-      .populate("department_id", "name")
-      .populate("service_id", "name");
+      .populate({
+        path: "citizen_id",
+        select: "first_name last_name email phone_number",
+      })
+      .populate({
+        path: "department_id",
+        select: "name", // Add more fields if needed
+      })
+      .populate({
+        path: "service_id",
+        select: "name description", // Example adding another field
+      });
 
     res.status(200).json({ success: true, data: documents });
   } catch (error) {
@@ -24,10 +34,19 @@ const getAllDocument = async (req, res) => {
 const getDocumentListById = async (req, res) => {
   try {
     const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid ID format" });
+    }
+
     const document = await DocumentApplicationModel.findById(id)
+      .select("-__v")
       .populate("citizen_id", "first_name last_name email phone_number")
       .populate("department_id", "name")
-      .populate("service_id", "name");
+      .populate("service_id", "name description") // Added description as an example
+      .lean();
 
     if (!document) {
       return res
