@@ -12,6 +12,8 @@ const citizenSchema = new mongoose.Schema(
       enum: ["Male", "Female"],
       required: true,
     },
+    otp: String,
+    otpExpiry: Date,
     wallet_status: {
       type: String,
       enum: ["active", "suspended", "pending"],
@@ -31,7 +33,7 @@ const citizenSchema = new mongoose.Schema(
     },
     password: {
       type: String,
-      required: true
+      required: true,
     },
     languagePreference: {
       type: String,
