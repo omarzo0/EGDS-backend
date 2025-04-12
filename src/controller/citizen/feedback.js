@@ -3,6 +3,7 @@ const Feedback = require("../../database/models/feedback");
 const createFeedback = async (req, res) => {
   try {
     const { feedback_text, rating } = req.body;
+    const { id } = req.params;
 
     // Validate required fields
     if (!feedback_text) {
@@ -12,7 +13,6 @@ const createFeedback = async (req, res) => {
       });
     }
 
-    // Validate rating (1-5 if provided)
     if (rating && (rating < 1 || rating > 5)) {
       return res.status(400).json({
         success: false,
@@ -22,7 +22,7 @@ const createFeedback = async (req, res) => {
 
     // Create and save feedback
     const feedback = new Feedback({
-      citizenId,
+      Citizen_id: id,
       feedback_text,
       rating: rating || null,
     });

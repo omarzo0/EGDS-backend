@@ -9,7 +9,6 @@ const feedbackSchema = new mongoose.Schema(
     },
     feedback_text: {
       type: String,
-      required: true,
       maxlength: 500,
     },
     rating: {
