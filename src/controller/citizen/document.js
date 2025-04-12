@@ -20,7 +20,7 @@ const getDocumentsByCitizenId = async (req, res) => {
     // Find documents using the same ID format stored in documents
     const documents = await DocumentApplicationModel.find({ citizen_id: id })
       .populate('department_id', 'name description')
-      .populate('service_id', 'name fee processing_time')
+      .populate('service_id', 'name processing_time')
       .sort({ createdAt: -1 })
       .lean();
 

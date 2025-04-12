@@ -7,13 +7,17 @@ const eSignatureSchema = new mongoose.Schema(
       ref: "Citizen",
       required: true,
     },
-    department: {
-      type: String,
+    department_id: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Department",
       required: true,
+      index: true, // Indexing for performance
     },
-    document_type: {
-      type: String,
+    service_id: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Service",
       required: true,
+      index: true,
     },
     description: {
       type: String,
