@@ -10,12 +10,19 @@ const { citizenIsAuth } = require("../../middleware/auth");
 const router = express.Router();
 
 // Get all e-signature papers
-router.get("/esignature", citizenIsAuth, changeLanguage, getAllEpapers);
+router.get("/esignature/:id", 
+  //citizenIsAuth, 
+  changeLanguage, 
+  getAllEpapers);
 
 // Create e-signature paper
-router.post("/esignature", citizenIsAuth, changeLanguage, createEpaper);
+router.post("/esignature/:id", 
+  //citizenIsAuth, 
+  changeLanguage, createEpaper);
 
 // Delete e-signature paper
-router.delete("/esignature/:id", citizenIsAuth, changeLanguage, deleteEpaper);
+router.delete("/esignature/:id", 
+  //citizenIsAuth, 
+  changeLanguage, deleteEpaper);
 
 module.exports = router;
