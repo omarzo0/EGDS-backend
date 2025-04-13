@@ -7,7 +7,6 @@ const {
   getAllPayments,
   getPaymentById,
   getPaymentsByCitizen,
-  updatePaymentStatus,
 } = require("../../controller/admin/payment");
 
 router.get(
@@ -30,12 +29,5 @@ router.get(
   // changeLanguage,
   // adminAllowedTo([AdminRole.SUPER_ADMIN]),
   getPaymentsByCitizen
-);
-router.put(
-  "/payment/:id/status",
-  // adminIsAuth,
-  // changeLanguage,
-  // adminAllowedTo([AdminRole.SUPER_ADMIN]),
-  updatePaymentStatus
 );
 module.exports = router;
