@@ -3,18 +3,23 @@ const mongoose = require("mongoose");
 
 const getCitizenNotifications = async (req, res) => {
   try {
-    // Get citizen ID from authenticated user
-    // Try different common locations where user data might be stored
-    const citizenId =
-      req.user?._id || req.citizen?._id || req.session?.user?._id;
+    const { citizenId } = req.body;
+    if (!citizenId) {
+      return res.status(400).json({
+        success: false,
+        message: "Citizen ID not found in request"
+      });
+    }
 
-    // Get notifications for this citizen
+    // Get notifications for this citizen (both specific and broadcast)
     const notifications = await NotificationModel.find({
-      recipient: citizenId,
-      recipientType: "Citizen",
+      $or: [
+        { recipient: citizenId, recipientType: "Citizen" }, // Specific to citizen
+        { recipient: "all", recipientType: "Citizen" }      // Broadcast to all
+      ]
     })
-      .sort({ createdAt: -1 })
-      .lean();
+    .sort({ createdAt: -1 })
+    .lean();
 
     // Separate read and unread notifications
     const unread = notifications.filter((n) => n.status !== "Read");
@@ -25,8 +30,11 @@ const getCitizenNotifications = async (req, res) => {
       await NotificationModel.updateMany(
         {
           _id: { $in: unread.map((n) => n._id) },
-          recipient: citizenId,
-          status: { $ne: "Read" },
+          $or: [
+            { recipient: citizenId },
+            { recipient: "all" }
+          ],
+          status: { $ne: "Read" }
         },
         { $set: { status: "Read" } }
       );
@@ -50,6 +58,7 @@ const getCitizenNotifications = async (req, res) => {
     });
   }
 };
+
 
 module.exports = {
   getCitizenNotifications,

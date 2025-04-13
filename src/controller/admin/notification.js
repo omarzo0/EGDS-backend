@@ -2,21 +2,33 @@ const { NotificationModel } = require("../../database/models/Notification");
 const mongoose = require("mongoose");
 const { CitizenModel } = require("../../database/models/citizen");
 const { AdminModel } = require("../../database/models/admin");
+
+
 const sendNotificationToCitizen = async (req, res) => {
   try {
     const { citizenId } = req.params;
     const { title, message } = req.body;
 
-    if (!mongoose.Types.ObjectId.isValid(citizenId)) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Invalid citizen ID format" });
+    if (!title || !message) {
+      return res.status(400).json({ 
+        success: false, 
+        message: "Title and message are required" 
+      });
     }
 
-    if (!title || !message) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Title and message are required" });
+    if (!mongoose.Types.ObjectId.isValid(citizenId)) {
+      return res.status(400).json({ 
+        success: false, 
+        message: "Invalid citizen ID format" 
+      });
+    }
+
+    const citizen = await CitizenModel.findById(citizenId);
+    if (!citizen) {
+      return res.status(404).json({ 
+        success: false, 
+        message: "Citizen not found" 
+      });
     }
 
     const notification = await NotificationModel.create({
@@ -25,75 +37,64 @@ const sendNotificationToCitizen = async (req, res) => {
       title,
       message,
       status: "Sent",
-      senderType: "Admin",
+      senderType: "Admin"
     });
 
     res.status(201).json({
       success: true,
-      message: "Notification sent successfully",
-      data: notification,
+      message: "Notification sent to citizen",
+      data: notification
     });
+
   } catch (error) {
     console.error("Error sending notification:", error);
     res.status(500).json({
       success: false,
       message: "Failed to send notification",
-      error: error.message,
+      error: error.message.replace(/^Mongo(DB)?Error: /, '')
     });
   }
 };
 
-const sendNotificationToAllCitizens = async (req, res) => {
-  const session = await mongoose.startSession();
-  session.startTransaction();
 
+const sendNotificationToAllCitizens = async (req, res) => {
   try {
     const { title, message } = req.body;
 
     if (!title || !message) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Title and message are required" });
+      return res.status(400).json({ 
+        success: false, 
+        message: "Title and message are required" 
+      });
     }
 
-    const citizens = await CitizenModel.find({}, "_id").session(session);
-
-    if (!citizens.length) {
-      await session.abortTransaction();
-      return res
-        .status(404)
-        .json({ success: false, message: "No citizens found to notify" });
-    }
-
-    const notifications = citizens.map((citizen) => ({
-      recipient: citizen._id,
+    const notification = await NotificationModel.create({
+      recipient: "all",
       recipientType: "Citizen",
+      isBroadcast: true,
       title,
       message,
       status: "Sent",
-      senderType: "Admin",
-      createdAt: new Date(),
-    }));
+      senderType: "Admin"
+    });
 
-    await NotificationModel.insertMany(notifications, { session });
-    await session.commitTransaction();
-
-    return res.status(200).json({
+    res.status(201).json({
       success: true,
-      message: `Notifications sent to ${citizens.length} citizens`,
+      message: "Notification broadcasted to all citizens",
+      data: notification
     });
+
   } catch (error) {
-    await session.abortTransaction();
-    console.error("Notification error:", error);
-    return res.status(500).json({
+    console.error("Error broadcasting notification:", error);
+    res.status(500).json({
       success: false,
-      message: "Failed to send notifications",
-      error: error.message,
+      message: "Failed to broadcast notification",
+      error: error.message.replace(/^Mongo(DB)?Error: /, '')
     });
-  } finally {
-    session.endSession();
   }
 };
+
+
 const getNotificationsForAdmin = async (req, res) => {
   try {
     const { adminId } = req.params;
@@ -198,6 +199,8 @@ const sendNotificationToAdminsByType = async (req, res) => {
     session.endSession();
   }
 };
+
+
 const sendNotificationToAdmin = async (req, res) => {
   try {
     const { adminId } = req.params;
@@ -252,6 +255,9 @@ const sendNotificationToAdmin = async (req, res) => {
     });
   }
 };
+
+
+
 const sendNotificationToAllAdmins = async (req, res) => {
   const session = await mongoose.startSession();
   session.startTransaction();
@@ -309,6 +315,8 @@ const sendNotificationToAllAdmins = async (req, res) => {
     session.endSession();
   }
 };
+
+
 const sendExpirationNotification = async (document, daysUntilExpiry) => {
   let title, message;
 
@@ -356,6 +364,8 @@ const sendExpirationNotification = async (document, daysUntilExpiry) => {
     console.error(`Failed to send ${daysUntilExpiry}-day notification:`, error);
   }
 };
+
+
 const countUnreadNotificationsForAdmin = async (req, res) => {
   try {
     const { adminId } = req.params;
@@ -386,6 +396,7 @@ const countUnreadNotificationsForAdmin = async (req, res) => {
     });
   }
 };
+
 
 const markAllNotificationsRead = async (req, res) => {
   try {
@@ -419,6 +430,8 @@ const markAllNotificationsRead = async (req, res) => {
     });
   }
 };
+
+
 module.exports = {
   sendNotificationToCitizen,
   sendNotificationToAllCitizens,
