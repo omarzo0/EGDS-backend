@@ -24,10 +24,10 @@ const paymentSchema = new mongoose.Schema(
       type: String,
       default: "EGP",
     },
-    transaction_reference: { 
-      type: String, 
+    transaction_reference: {
+      type: String,
       required: true,
-      unique: true 
+      unique: true,
     },
     payment_date: {
       type: Date,
