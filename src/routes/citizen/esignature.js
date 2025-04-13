@@ -10,13 +10,12 @@ const { citizenIsAuth } = require("../../middleware/auth");
 const router = express.Router();
 
 // Get all e-signature papers
-router.get("/esignature/:id", 
+router.get("/esignature", 
   //citizenIsAuth, 
-  changeLanguage, 
-  getAllEpapers);
+  changeLanguage, getAllEpapers);
 
 // Create e-signature paper
-router.post("/esignature/:id", 
+router.post("/esignature", 
   //citizenIsAuth, 
   changeLanguage, createEpaper);
 

@@ -31,6 +31,10 @@ const Config = {
   EMAIL_PASSWORD: process.env["EMAIL_PASSWORD"],
   EMAIL_FROM_NAME: process.env["EMAIL_FROM_NAME"],
   EMAIL_FROM_ADDRESS: process.env["EMAIL_FROM_ADDRESS"],
+  STRIPE_SECRET_KEY: process.env["STRIPE_SECRET_KEY"],
+  STRIPE_PUBLISHABLE_KEY: process.env["STRIPE_PUBLISHABLE_KEY"],
+
+
 };
 
 module.exports = {

@@ -30,6 +30,7 @@ const citizenWalletRoutes = require("./src/routes/citizen/wallet");
 const citizenServicesRoutes = require("./src/routes/citizen/services");
 const citizenDigitalDocumentRoutes = require("./src/routes/citizen/digitalwallet");
 const citizenNotificationRoutes = require("./src/routes/citizen/notification");
+const citizenPaymentRoutes = require("./src/routes/citizen/payment");
 
 function initRoutes(app) {
   // Admin
@@ -60,6 +61,7 @@ function initRoutes(app) {
   app.use("/api/citizen", citizenServicesRoutes);
   app.use("/api/citizen", citizenDigitalDocumentRoutes);
   app.use("/api/citizen", citizenNotificationRoutes);
+  app.use("/api/citizen", citizenPaymentRoutes);
   // Test
   app.get("/api/test", (req, res) => {
     res.send("Server is running......");
