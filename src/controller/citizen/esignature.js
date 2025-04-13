@@ -6,7 +6,7 @@ const mongoose = require("mongoose");
 
 const getAllEpapers = async (req, res) => {
   try {
-    const { id } = req.params;
+    const { id } = req.body;
     // Check if the citizen exists by id
     const epapers = await CitizenModel.find({_id: id});
     if (!epapers) {
@@ -53,17 +53,17 @@ const getAllEpapers = async (req, res) => {
     });
   }
 };
+
+
 const createEpaper = async (req, res) => {
   try {
     // Extract data from request body
     const { 
+      id,
       document_type,  // This should be the service name
       description, 
       uploaded_document 
     } = req.body;
-
-    // Get citizen_id from URL parameters
-    const { id } = req.params;
 
     // Validate required fields
     if (!document_type || !description || !uploaded_document) {
@@ -124,6 +124,14 @@ const createEpaper = async (req, res) => {
 
   } catch (error) {
     console.error("Error creating e-signature document:", error);
+
+    if (error.name === 'MongoNetworkError' || error.message.includes('ECONNRESET')) {
+      return res.status(503).json({
+        success: false,
+        message: "Database connection error. Please try again later."
+      });
+    }
+    
     res.status(500).json({
       success: false,
       message: "Internal server error",

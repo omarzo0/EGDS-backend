@@ -1,16 +1,13 @@
 const express = require("express");
-const {
-  getFeedback,
-  createFeedback,
-} = require("../../controller/citizen/feedback.js");
+const { getPayment } = require("../../controller/citizen/payment.js");
 const { changeLanguage } = require("../../middleware/language");
 const { citizenIsAuth } = require("../../middleware/auth");
 
 const router = express.Router();
 
-// Create feedback
-router.post("/feedback", 
-  //citizenIsAuth, 
-  changeLanguage, createFeedback);
+// Get points
+router.post("/payment", 
+    //citizenIsAuth, 
+    changeLanguage, getPayment);
 
 module.exports = router;
