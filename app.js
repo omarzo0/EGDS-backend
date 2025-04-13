@@ -31,6 +31,9 @@ const citizenServicesRoutes = require("./src/routes/citizen/services");
 const citizenDigitalDocumentRoutes = require("./src/routes/citizen/digitalwallet");
 const citizenNotificationRoutes = require("./src/routes/citizen/notification");
 const citizenPaymentRoutes = require("./src/routes/citizen/payment");
+const citizencalendarServiceRoutes = require("./src/routes/citizen/CalendarService"); // Import the service
+const citizenNewsRoutes = require("./src/routes/citizen/news"); // Import the service
+
 
 function initRoutes(app) {
   // Admin
@@ -62,6 +65,9 @@ function initRoutes(app) {
   app.use("/api/citizen", citizenDigitalDocumentRoutes);
   app.use("/api/citizen", citizenNotificationRoutes);
   app.use("/api/citizen", citizenPaymentRoutes);
+  app.use("/api/citizen", citizencalendarServiceRoutes);
+  app.use("/api/citizen", citizenNewsRoutes);
+
   // Test
   app.get("/api/test", (req, res) => {
     res.send("Server is running......");
