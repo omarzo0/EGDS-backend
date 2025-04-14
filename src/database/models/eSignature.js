@@ -35,6 +35,12 @@ const eSignatureSchema = new mongoose.Schema(
       enum: ["Pending", "Signed", "Rejected", "Processing"],
       default: "Pending",
     },
+    rejection_reason: {
+      type: String,
+      required: function () {
+        return this.status === "Rejected";
+      },
+    },
     uploaded_date: {
       type: Date,
       default: Date.now,
