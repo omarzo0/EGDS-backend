@@ -6,59 +6,55 @@ const { AdminRole } = require("../../database/models/admin");
 const {
   getAllSignature,
   getSignatureListById,
-  createSignature,
-  updateSignature,
+  handleSignature,
   deleteSignature,
+  getSignatureCounts,
 } = require("../../controller/admin/eSignature");
 
 const router = express.Router();
 const upload = multer({ dest: "uploads/" });
 
 router.get(
-  "/signature",
-  adminIsAuth,
-  changeLanguage,
-  adminAllowedTo(
-    [AdminRole.SUPER_ADMIN, AdminRole.ADMIN, AdminRole.OFFICER],
-    getAllSignature
-  )
+  "/signature-list",
+  // adminIsAuth,
+  // changeLanguage,
+  // adminAllowedTo([AdminRole.SUPER_ADMIN, AdminRole.ADMIN, AdminRole.OFFICER]),
+  getAllSignature
 );
 router.get(
-  "/signature/:id",
-  adminIsAuth,
-  changeLanguage,
-  adminAllowedTo(
-    [AdminRole.SUPER_ADMIN, AdminRole.ADMIN, AdminRole.OFFICER],
-    getSignatureListById
-  )
+  "/signature-count",
+  // adminIsAuth,
+  // changeLanguage,
+  // adminAllowedTo([AdminRole.SUPER_ADMIN, AdminRole.ADMIN, AdminRole.OFFICER]),
+  getSignatureCounts
+);
+router.get(
+  "/signature-list/:id",
+  // adminIsAuth,
+  // changeLanguage,
+  // adminAllowedTo([AdminRole.SUPER_ADMIN, AdminRole.ADMIN, AdminRole.OFFICER]),
+  getSignatureListById
 );
 router.post(
-  "/signature",
-  adminIsAuth,
-  changeLanguage,
-  adminAllowedTo(
-    [AdminRole.SUPER_ADMIN, AdminRole.ADMIN, AdminRole.OFFICER],
-    createSignature
-  ),
-  upload.single("document")
+  "/signatures",
+  // adminIsAuth,
+  // changeLanguage,
+  // adminAllowedTo([AdminRole.SUPER_ADMIN, AdminRole.ADMIN, AdminRole.OFFICER]),
+  handleSignature
 );
 router.put(
   "/signature/:id",
-  adminIsAuth,
-  changeLanguage,
-  adminAllowedTo(
-    [AdminRole.SUPER_ADMIN, AdminRole.ADMIN, AdminRole.OFFICER],
-    updateSignature
-  )
+  // adminIsAuth,
+  // changeLanguage,
+  // adminAllowedTo([AdminRole.SUPER_ADMIN, AdminRole.ADMIN, AdminRole.OFFICER]),
+  handleSignature
 );
 router.delete(
   "/signature/:id",
-  adminIsAuth,
-  changeLanguage,
-  adminAllowedTo(
-    [AdminRole.SUPER_ADMIN, AdminRole.ADMIN, AdminRole.OFFICER],
-    deleteSignature
-  )
+  // adminIsAuth,
+  // changeLanguage,
+  // adminAllowedTo([AdminRole.SUPER_ADMIN, AdminRole.ADMIN, AdminRole.OFFICER]),
+  deleteSignature
 );
 
 module.exports = router;
