@@ -69,36 +69,45 @@ documentSchema.post("save", async function (doc) {
 
 // In your document model file
 documentSchema.pre("save", function (next) {
+  updateExpirationStatus(this);
+  next();
+});
+
+// Add a static method to update expiration status when querying
+documentSchema.statics.updateExpirationStatus = function (document) {
+  return updateExpirationStatus(document);
+};
+
+// Helper function to update expiration status
+function updateExpirationStatus(doc) {
   const now = new Date();
-  const expiryDate = new Date(this.expiry_date);
+  const expiryDate = new Date(doc.expiry_date);
   const timeDiff = expiryDate.getTime() - now.getTime();
   const daysDiff = Math.ceil(timeDiff / (1000 * 3600 * 24));
 
   if (daysDiff <= 0) {
-    this.expiration_status = "Expired";
+    doc.expiration_status = "Expired";
   } else if (daysDiff <= 30) {
-    this.expiration_status = "Expires Soon";
+    doc.expiration_status = "Expires Soon";
 
-    // Send automatic reminder if not already sent or if it's been a while
+    // Reminder logic remains the same
     const shouldSendReminder =
-      !this.reminder_sent ||
-      (this.last_reminder_sent &&
-        now - new Date(this.last_reminder_sent) > 7 * 24 * 60 * 60 * 1000); // 1 week
+      !doc.reminder_sent ||
+      (doc.last_reminder_sent &&
+        now - new Date(doc.last_reminder_sent) > 7 * 24 * 60 * 60 * 1000);
 
-    if (shouldSendReminder && this.citizen_id) {
-      // In a real app, you might want to queue this instead of doing it synchronously
-      this.reminder_sent = true;
-      this.last_reminder_sent = now;
+    if (shouldSendReminder && doc.citizen_id) {
+      doc.reminder_sent = true;
+      doc.last_reminder_sent = now;
 
-      // Get citizen email (in a real app, you'd populate this)
-      CitizenModel.findById(this.citizen_id)
+      CitizenModel.findById(doc.citizen_id)
         .then((citizen) => {
           if (citizen && citizen.email) {
             sendReminderEmail(
               {
-                document_name: this.document_name,
-                document_type: this.document_type,
-                document_number: this.document_number,
+                document_name: doc.document_name,
+                document_type: doc.document_type,
+                document_number: doc.document_number,
                 days_remaining: daysDiff,
               },
               citizen.email
@@ -110,11 +119,11 @@ documentSchema.pre("save", function (next) {
         );
     }
   } else {
-    this.expiration_status = "Valid";
+    doc.expiration_status = "Valid";
   }
 
-  next();
-});
+  return doc;
+}
 const DocumentModel =
   mongoose.models.Document || mongoose.model("Document", documentSchema);
 
