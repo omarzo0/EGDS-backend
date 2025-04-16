@@ -10,7 +10,7 @@ const adminRoutes = require("./src/routes/admin/admin");
 const citizenRoutes = require("./src/routes/admin/citizen");
 const documentRoutes = require("./src/routes/admin/document");
 const departmentRoutes = require("./src/routes/admin/department");
-const eSignatureRoutes = require("./src/routes/admin/esignature");
+const eSignatureRoutes = require("./src/routes/admin/eSignature");
 const feedbackRoutes = require("./src/routes/admin/feedback");
 const servicesRoutes = require("./src/routes/admin/services");
 const NotificationRoutes = require("./src/routes/admin/notification");
@@ -33,7 +33,6 @@ const citizenPaymentRoutes = require("./src/routes/citizen/payment");
 const citizencalendarServiceRoutes = require("./src/routes/citizen/CalendarService"); // Import the service
 const citizenNewsRoutes = require("./src/routes/citizen/news"); // Import the service
 const citizenReminderRoutes = require("./src/routes/citizen/reminder"); // Import the service
-
 
 function initRoutes(app) {
   // Admin
