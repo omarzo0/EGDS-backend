@@ -128,8 +128,9 @@ const forgotPassword = async (req, res) => {
     }
 
     const normalizedEmail = email.toLowerCase();
-    const citizen = await CitizenModel.findOne({ email: normalizedEmail });
-
+    const citizen = await CitizenModel.findOne({
+      email: { $regex: new RegExp(`^${normalizedEmail}$`, "i") },
+    });
     // Handle case where citizen is not found
     if (!citizen) {
       return res.status(404).json({

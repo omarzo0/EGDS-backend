@@ -152,12 +152,11 @@ const getDocumentStatusCounts = async (req, res) => {
         DocumentApplicationModel.countDocuments({ status: "Pending" }),
         DocumentApplicationModel.countDocuments({ status: "In Review" }),
         DocumentApplicationModel.countDocuments({ status: "Rejected" }),
-        DocumentApplicationModel.countDocuments({ status: "Completed" }),
       ]);
 
     res.status(200).json({
-      labels: ["Approved", "Pending", "In Review", "Rejected", "Completed"],
-      values: [approved, pending, inReview, rejected, completed],
+      labels: ["Approved", "Pending", "In Review", "Rejected"],
+      values: [approved, pending, inReview, rejected],
     });
   } catch (error) {
     res.status(500).json({

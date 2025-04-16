@@ -3,11 +3,12 @@ const mongoose = require("mongoose");
 
 const getCitizenNotifications = async (req, res) => {
   try {
-    const { citizenId } = req.body;
-    if (!citizenId) {
+    const { citizenId } = req.params; // Now getting from URL params instead of body
+
+    if (!mongoose.Types.ObjectId.isValid(citizenId)) {
       return res.status(400).json({
         success: false,
-        message: "Citizen ID not found in request"
+        message: "Invalid Citizen ID format",
       });
     }
 
@@ -15,11 +16,11 @@ const getCitizenNotifications = async (req, res) => {
     const notifications = await NotificationModel.find({
       $or: [
         { recipient: citizenId, recipientType: "Citizen" }, // Specific to citizen
-        { recipient: "all", recipientType: "Citizen" }      // Broadcast to all
-      ]
+        { recipient: "all", recipientType: "Citizen" }, // Broadcast to all
+      ],
     })
-    .sort({ createdAt: -1 })
-    .lean();
+      .sort({ createdAt: -1 })
+      .lean();
 
     // Separate read and unread notifications
     const unread = notifications.filter((n) => n.status !== "Read");
@@ -30,11 +31,8 @@ const getCitizenNotifications = async (req, res) => {
       await NotificationModel.updateMany(
         {
           _id: { $in: unread.map((n) => n._id) },
-          $or: [
-            { recipient: citizenId },
-            { recipient: "all" }
-          ],
-          status: { $ne: "Read" }
+          $or: [{ recipient: citizenId }, { recipient: "all" }],
+          status: { $ne: "Read" },
         },
         { $set: { status: "Read" } }
       );
@@ -58,7 +56,6 @@ const getCitizenNotifications = async (req, res) => {
     });
   }
 };
-
 
 module.exports = {
   getCitizenNotifications,
