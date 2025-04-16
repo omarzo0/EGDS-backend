@@ -3,7 +3,7 @@ const mongoose = require("mongoose");
 
 const getAllMyDocuments = async (req, res) => {
   try {
-    const { citizen_id } = req.params;
+    const { citizen_id } = req.body;
     const requestingUser = req.user;
 
     const documents = await DocumentModel.find({ citizen_id }).sort({

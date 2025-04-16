@@ -10,7 +10,7 @@ const { citizenIsAuth } = require("../../middleware/auth");
 const router = express.Router();
 
 router.get(
-  "/digital-document-list/:citizen_id",
+  "/digital-document-list",
   // citizenIsAuth,
   changeLanguage,
   getAllMyDocuments

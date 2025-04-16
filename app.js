@@ -32,6 +32,7 @@ const citizenNotificationRoutes = require("./src/routes/citizen/notification");
 const citizenPaymentRoutes = require("./src/routes/citizen/payment");
 const citizencalendarServiceRoutes = require("./src/routes/citizen/CalendarService"); // Import the service
 const citizenNewsRoutes = require("./src/routes/citizen/news"); // Import the service
+const citizenReminderRoutes = require("./src/routes/citizen/reminder"); // Import the service
 
 
 function initRoutes(app) {
@@ -65,6 +66,7 @@ function initRoutes(app) {
   app.use("/api/citizen", citizenPaymentRoutes);
   app.use("/api/citizen", citizencalendarServiceRoutes);
   app.use("/api/citizen", citizenNewsRoutes);
+  app.use("/api/citizen", citizenReminderRoutes);
 
   // Test
   app.get("/api/test", (req, res) => {
