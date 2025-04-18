@@ -32,7 +32,9 @@ const citizenNotificationRoutes = require("./src/routes/citizen/notification");
 const citizenPaymentRoutes = require("./src/routes/citizen/payment");
 const citizencalendarServiceRoutes = require("./src/routes/citizen/CalendarService"); // Import the service
 const citizenNewsRoutes = require("./src/routes/citizen/news"); // Import the service
-const citizenReminderRoutes = require("./src/routes/citizen/reminder"); // Import the service
+const citizenCountsRoutes = require("./src/routes/citizen/counts"); // Import the service
+const citizenAccountRoutes = require("./src/routes/citizen/account");
+
 
 function initRoutes(app) {
   // Admin
@@ -65,7 +67,9 @@ function initRoutes(app) {
   app.use("/api/citizen", citizenPaymentRoutes);
   app.use("/api/citizen", citizencalendarServiceRoutes);
   app.use("/api/citizen", citizenNewsRoutes);
-  app.use("/api/citizen", citizenReminderRoutes);
+  app.use("/api/citizen", citizenCountsRoutes);
+  app.use("/api/citizen", citizenAccountRoutes);
+
 
   // Test
   app.get("/api/test", (req, res) => {

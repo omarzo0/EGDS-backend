@@ -2,14 +2,14 @@ const Joi = require("joi");
 const { getI18ValidationMessage } = require("../../utils/i18n");
 
 const citizenLoginSchema = Joi.object({
-  email: Joi.string()
+  national_id: Joi.string()
     .trim()
-    .email()
     .required()
+    .pattern(/^\d{14}$/) // Adjust the regex pattern based on your national ID format
     .messages({
-      "string.email": getI18ValidationMessage("email.invalid"),
-      "string.empty": getI18ValidationMessage("email.required"),
-      "any.required": getI18ValidationMessage("email.required"),
+        "string.empty": getI18ValidationMessage("national_id.required"),
+        "any.required": getI18ValidationMessage("national_id.required"),
+        "string.pattern.base": getI18ValidationMessage("national_id.invalid"),
     }),
   password: Joi.string()
     .trim()

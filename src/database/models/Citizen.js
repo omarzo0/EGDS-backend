@@ -31,10 +31,6 @@ const citizenSchema = new mongoose.Schema(
       enum: ["Single", "Married", "Divorced", "Widowed"],
       required: true,
     },
-    password: {
-      type: String,
-      required: true,
-    },
     languagePreference: {
       type: String,
       enum: ["en", "ar"],

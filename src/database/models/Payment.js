@@ -24,7 +24,7 @@ const paymentSchema = new mongoose.Schema(
       type: String,
       default: "EGP",
     },
-    transaction_reference: {
+    invoice_number: {
       type: String,
       required: true,
       unique: true,
