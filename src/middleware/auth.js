@@ -3,6 +3,7 @@ const { verifyToken } = require("../utils/token");
 const { Config } = require("../config/index");
 const { AdminModel } = require("../database/models/admin");
 const { CitizenModel } = require("../database/models/citizen");
+const { registerModel } = require("../database/models/register");
 
 async function adminIsAuth(req, res, next) {
   try {
@@ -54,7 +55,7 @@ async function citizenIsAuth(req, res, next) {
 
     const citizenId = verifyToken(splitHeader[1], Config.JWT_CITIZEN_SECRET);
 
-    const citizen = await CitizenModel.findById(
+    const citizen = await registerModel.findById(
       req.citizenId.toString()
     ).select("-password");
     if (!citizen) {

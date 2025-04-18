@@ -11,7 +11,9 @@ const { citizenLoginSchema } = require("../../validation/citizen/auth.js");
 const router = express.Router();
 
 // Login
-router.post("/login", validateBody(citizenLoginSchema), login);
+router.post("/login", 
+  
+  login);
 
 // Register
 router.post("/register", register);

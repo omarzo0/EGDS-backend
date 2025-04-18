@@ -34,8 +34,11 @@ const Config = {
   STRIPE_SECRET_KEY: process.env["STRIPE_SECRET_KEY"],
   STRIPE_PUBLISHABLE_KEY: process.env["STRIPE_PUBLISHABLE_KEY"],
   CALENDARIFIC_API_KEY: process.env["CALENDARIFIC_API_KEY"],
+
+  ENCRYPTION_KEY: process.env["ENCRYPTION_KEY"],
   
 };
+
 
 module.exports = {
   initConfig,
