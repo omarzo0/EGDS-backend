@@ -6,26 +6,221 @@ const { CitizenModel } = require("../../database/models/citizen");
 const nodemailer = require("nodemailer");
 const { PDFDocument, StandardFonts, rgb } = require('pdf-lib');
 const { param } = require('../../routes/citizen/counts');
-
+const speakeasy = require('speakeasy');
 require('dotenv').config();
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
 const app = express();
 app.use(express.json());
 
-const getPayment = async (req, res) => {
+const paymentOTP = async (req, res) => {
   try {
-    const { paymentMethodId, service_id, citizen_id } = req.body;
+    const { id, service_id } = req.params;
 
-    // Validate required fields
-    if (!paymentMethodId || !service_id || !citizen_id) {
+    // Validate ID input
+    if (!id) {
       return res.status(400).json({
-        success: false,
-        message: "Payment method ID, service ID, and citizen ID are required"
+        status: "error",
+        error: { code: 400, message: "User ID is required" },
       });
     }
 
-    // Verify the service exists
+    // Find user by ID
+    const citizen = await CitizenModel.findById(id);
+    if (!citizen || !citizen.email) {
+      return res.status(404).json({
+        status: "error",
+        error: { code: 404, message: "Citizen not found or email missing" },
+      });
+    }
+
+    const service = await ServiceModel.findById(service_id);
+    if (!service) {
+      return res.status(404).json({
+        status: "error",
+        error: { code: 404, message: "service not found" },
+      });
+    }
+
+
+    // Generate TOTP
+    const secret = speakeasy.generateSecret({ length: 20 }).base32;
+    const otp = speakeasy.totp({
+      secret: secret,
+      encoding: "base32",
+      step: 600, // 10 minutes expiry
+    });
+
+    // Generate unique transaction reference
+    const transactionReference = `TXN-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+
+    // Create payment record
+    const paymentRecord = new PaymentModel({
+      citizen_id: citizen._id,
+      otp: otp, // Store the actual OTP, not the secret
+      otpSecret: secret, // Store the secret for verification
+      otpExpiry: Date.now() + 10 * 60 * 1000,
+      transaction_reference: transactionReference, // Add unique reference
+      status: 'pending', // Track payment status
+      service_id: service._id
+    });
+
+    await paymentRecord.save();
+
+    const transporter = nodemailer.createTransport({
+      host: process.env.EMAIL_HOST,
+      port: process.env.EMAIL_PORT || 587,
+      secure: process.env.EMAIL_SECURE === 'true',
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASSWORD
+      }
+    });
+
+    // Verify SMTP connection
+    try {
+      await transporter.verify();
+      console.log("SMTP connection verified");
+    } catch (verifyError) {
+      console.error("SMTP connection failed:", verifyError);
+      return res.status(503).json({
+        status: "error",
+        error: {
+          code: 503,
+          message: "Email service is currently unavailable",
+        },
+      });
+    }
+
+    // Email content
+    const mailOptions = {
+      from: `"${process.env.EMAIL_FROM_NAME}" <${process.env.EMAIL_FROM_ADDRESS}>`,
+      to: citizen.email.toLowerCase(),
+      subject: "Payment Verification OTP - E-Government Documentation System",
+      text: `Your OTP for payment verification is: ${otp}`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #2c3e50;">Payment Verification Request</h2>
+          <p>You requested an OTP for payment verification in the E-Government Documentation System.</p>
+          <p style="font-size: 18px; font-weight: bold;">Your OTP code is: <span style="color: #e74c3c;">${otp}</span></p>
+          <p>This code will expire in 10 minutes.</p>
+          <p>If you didn't request this, please ignore this email.</p>
+          <hr style="border: 0; border-top: 1px solid #eee;">
+          <p style="font-size: 12px; color: #7f8c8d;">E-Government Documentation System Team</p>
+        </div>
+      `,
+      headers: {
+        "X-Mailer": "Node.js",
+        "X-Priority": "1",
+      },
+    };
+
+    // Send email
+    await transporter.sendMail(mailOptions);
+
+    return res.status(200).json({
+      status: "success",
+      data: {
+        message: "OTP sent successfully",
+      },
+    });
+  } catch (err) {
+    console.error("Payment OTP error:", err);
+
+    // Handle specific error cases
+    let statusCode = 500;
+    let message = "Internal Server Error";
+
+    if (err.code === "ESOCKET" || err.code === "ECONNECTION") {
+      statusCode = 503;
+      message = "Email service is currently unavailable";
+    }
+
+    return res.status(statusCode).json({
+      status: "error",
+      error: {
+        code: statusCode,
+        message: message,
+      },
+    });
+  }
+};
+
+
+
+const getPayment = async (req, res) => {
+  try {
+    const { paymentMethodId, service_id, id, otp } = req.body;
+
+    // Validate required fields including OTP
+    if (!paymentMethodId || !service_id || !id || !otp) {
+      return res.status(400).json({
+        success: false,
+        message: "Payment method ID, service ID, citizen ID, and OTP are required"
+      });
+    }
+
+    // Get citizen's details including OTP secret
+    const citizen = await CitizenModel.findById(id);
+    if (!citizen || !citizen.email) {
+      return res.status(404).json({
+        success: false,
+        message: "Citizen not found"
+      });
+    }
+
+    // Get the payment record (newest first)
+    const payment = await PaymentModel.findOne({ citizen_id: id })
+      .sort({ createdAt: -1 })
+      .select('otpSecret otpExpiry otp status') // Add status to selection
+      .limit(1);
+
+    if (!payment) {
+      return res.status(404).json({
+        success: false,
+        message: "No OTP found for this user"
+      });
+    }
+
+    // Check if payment was already completed
+    if (payment.status === 'completed') {
+      return res.status(400).json({
+        success: false,
+        message: "This payment was already processed"
+      });
+    }
+
+    // Verify OTP
+    if (!payment.otpSecret || !payment.otpExpiry) {
+      return res.status(400).json({
+        success: false,
+        message: "No OTP requested or OTP expired"
+      });
+    }
+
+    if (payment.otpExpiry < Date.now()) {
+      return res.status(400).json({
+        success: false,
+        message: "OTP has expired. Please request a new one."
+      });
+    }
+
+    const isValidOTP = speakeasy.totp.verify({
+      secret: payment.otpSecret,
+      encoding: 'base32',
+      token: otp,
+      window: 1,
+      step: 600
+    });
+
+    if (!isValidOTP) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid OTP. Please enter the correct code."
+      });
+    }
+
+    // Rest of your existing payment processing logic
     const service = await ServiceModel.findById(service_id);
     if (!service) {
       return res.status(404).json({
@@ -35,12 +230,12 @@ const getPayment = async (req, res) => {
     }
 
     const department = await DepartmentModel.findById(service.department_id);
-if (!department) {
-  return res.status(404).json({
-    success: false,
-    message: "Department not found"
-  });
-}
+    if (!department) {
+      return res.status(404).json({
+        success: false,
+        message: "Department not found"
+      });
+    }
 
     // Validate service fee
     if (typeof service.fees !== 'number' || service.fees <= 0) {
@@ -51,7 +246,6 @@ if (!department) {
     }
 
     // Get citizen's details from database
-    const citizen = await CitizenModel.findById(citizen_id).select('email first_name last_name');
     if (!citizen || !citizen.email) {
       return res.status(404).json({
         success: false,
@@ -77,26 +271,29 @@ if (!department) {
         allow_redirects: 'never'
       },
       metadata: {
-        citizen_id: citizen_id.toString(),
+        citizen_id: id.toString(),
         project: "University Project",
         service_id: service._id.toString(),
         invoice_number: invoiceNumber // Store our custom invoice number
       }
     });
 
-    // Create payment record in database with invoice number
-    const paymentRecord = new PaymentModel({
-      citizen_id: citizen_id,
-      stripe_payment_id: paymentIntent.id,
-      service_id: service._id,
-      amount_paid: service.fees,
-      currency: "EGP",
-      invoice_number: invoiceNumber, // Store the invoice number
-      payment_date: new Date(),
-    });
-
-    await paymentRecord.save();
-
+    // Update payment record with payment details
+    const updatedPayment = await PaymentModel.findByIdAndUpdate(
+      payment._id,
+      {
+        otp: "used",
+        otpSecret: "used",
+        stripe_payment_id: paymentIntent.id,
+        amount_paid: service.fees,
+        currency: "EGP",
+        invoice_number: invoiceNumber,
+        payment_date: new Date(),
+        status: 'completed'
+      },
+      { new: true }
+    );
+    await updatedPayment.save();
     // Send bilingual confirmation email if SMTP is configured
     if (process.env.EMAIL_HOST && process.env.EMAIL_USER && process.env.EMAIL_PASSWORD) {
       try {
@@ -235,10 +432,25 @@ const getcitizenPayment = async (req, res) => {
   try {
     const { id } = req.params;
     
+    // First, check and update any expired pending payments
+    const now = new Date();
+    await PaymentModel.updateMany(
+      { 
+        citizen_id: id,
+        status: 'pending',
+        otpExpiry: { $lt: now } // Find payments where otpExpiry is less than current time
+      },
+      { $set: { status: 'failed',
+        otp: "expired",
+        otpSecret: "expired"
+       } }
+    );
+
+    // Then fetch the updated payment data
     const [citizen, payments] = await Promise.all([
       CitizenModel.findById(id),
       PaymentModel.find({ citizen_id: id })
-        .select('invoice_number payment_date amount_paid currency service_id')
+        .select('status invoice_number payment_date amount_paid currency service_id')
         .populate('service_id', 'name')
     ]);
 
@@ -258,8 +470,11 @@ const getcitizenPayment = async (req, res) => {
 
     // Format the response with formatted date
     const formattedPayments = payments.map(payment => {
-      // Format the date as "15 May 2023"
-      const formattedDate = payment.payment_date.toLocaleDateString('en-US', {
+      const paymentDate = payment.payment_date instanceof Date 
+        ? payment.payment_date 
+        : new Date();
+      
+      const formattedDate = paymentDate.toLocaleDateString('en-US', {
         day: 'numeric',
         month: 'long',
         year: 'numeric'
@@ -267,11 +482,12 @@ const getcitizenPayment = async (req, res) => {
       
       return {
         invoice_number: payment.invoice_number,
-        payment_date: formattedDate, // Now using the formatted date
+        payment_date: formattedDate,
         amount: payment.amount_paid,
         currency: payment.currency,
+        status: payment.status,
         service: {
-          name: payment.service_id.name,
+          name: payment.service_id?.name || 'Unknown Service',
         }
       };
     });
@@ -287,10 +503,11 @@ const getcitizenPayment = async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Internal server error",
-      error: error.message
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 };
+
 
 // Helper function to generate PDF invoice using pdf-lib
 async function generateInvoicePDF({ invoiceNumber, invoiceDate, dueDate, service, department, citizen, amount, currency }) {
@@ -452,5 +669,6 @@ async function generateInvoicePDF({ invoiceNumber, invoiceDate, dueDate, service
 
 module.exports = {
     getPayment,
-    getcitizenPayment
+    getcitizenPayment,
+    paymentOTP
   };

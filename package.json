@@ -39,6 +39,7 @@
     "pdfkit": "^0.16.0",
     "request": "^2.88.2",
     "sib-api-v3-sdk": "^8.5.0",
+    "speakeasy": "^2.0.0",
     "stripe": "^17.7.0",
     "twilio": "^5.5.2",
     "uuid": "^9.0.1"

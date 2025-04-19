@@ -5,20 +5,17 @@ const paymentSchema = new mongoose.Schema(
     citizen_id: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Citizen",
-      required: true,
+      required: true
     },
     stripe_payment_id: {
       type: String,
-      required: true,
     },
     service_id: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Service",
-      required: true,
     },
     amount_paid: {
       type: Number,
-      required: true,
     },
     currency: {
       type: String,
@@ -26,13 +23,31 @@ const paymentSchema = new mongoose.Schema(
     },
     invoice_number: {
       type: String,
+    },
+    otp: {
+      type: String,
       required: true,
+    },
+    otpSecret: {  // Add this field to store the secret
+      type: String,
+      required: true
+    },
+    otpExpiry: {
+      type: Date,
+      required: true,
+    },
+    transaction_reference: {  // Add this field
+      type: String,
       unique: true,
+      required: true
+    },
+    status: {  // Add status tracking
+      type: String,
+      enum: ['pending', 'completed', 'failed'],
+      default: 'pending'
     },
     payment_date: {
       type: Date,
-      default: Date.now,
-      required: true,
     },
   },
   {
