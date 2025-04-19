@@ -11,8 +11,8 @@ const {
   errorResponseFormat,
 } = require("../../utils/response");
 const nodemailer = require("nodemailer");
-const crypto = require('crypto');
-require ("dotenv").config();
+const crypto = require("crypto");
+require("dotenv").config();
 function generateOTP() {
   return Math.floor(100000 + Math.random() * 900000).toString();
 }
@@ -22,57 +22,64 @@ const login = async (req, res) => {
 
     // Validate input
     if (!national_id || !password) {
-      throw new ApiError(HttpStatus.BadRequest, 'National ID and password are required');
+      throw new ApiError(
+        HttpStatus.BadRequest,
+        "National ID and password are required"
+      );
     }
 
     // Validate encryption key exists
     if (!process.env.ENCRYPTION_KEY) {
-      throw new ApiError(HttpStatus.InternalServerError, 'Server configuration error');
+      throw new ApiError(
+        HttpStatus.InternalServerError,
+        "Server configuration error"
+      );
     }
 
     // Decryption function
     const decrypt = (text) => {
       try {
-        if (!text || typeof text !== 'string') {
-          throw new Error('Invalid encrypted text');
+        if (!text || typeof text !== "string") {
+          throw new Error("Invalid encrypted text");
         }
 
-        const parts = text.split(':');
+        const parts = text.split(":");
         if (parts.length !== 2) {
-          throw new Error('Invalid encrypted text format');
+          throw new Error("Invalid encrypted text format");
         }
 
         const [ivHex, encryptedHex] = parts;
-        const iv = Buffer.from(ivHex, 'hex');
-        const encrypted = Buffer.from(encryptedHex, 'hex');
+        const iv = Buffer.from(ivHex, "hex");
+        const encrypted = Buffer.from(encryptedHex, "hex");
         const decipher = crypto.createDecipheriv(
           "aes-256-cbc",
           Buffer.from(process.env.ENCRYPTION_KEY),
           iv
         );
-        
-        let decrypted = decipher.update(encrypted, null, 'utf8');
-        decrypted += decipher.final('utf8');
+
+        let decrypted = decipher.update(encrypted, null, "utf8");
+        decrypted += decipher.final("utf8");
         return decrypted;
       } catch (err) {
-        console.error('Decryption failed:', err);
-        throw new ApiError(HttpStatus.BadRequest, 'Invalid national ID format');
+        console.error("Decryption failed:", err);
+        throw new ApiError(HttpStatus.BadRequest, "Invalid national ID format");
       }
     };
 
     // Get all register records to compare decrypted national_ids
-    const registers = await registerModel.find()
-      .select('+password')
-      .populate('citizen_id');
+    const registers = await registerModel
+      .find()
+      .select("+password")
+      .populate("citizen_id");
 
     // Find matching register by comparing decrypted national_ids
     let matchedRegister = null;
     let matchedCitizen = null;
-    
+
     for (const register of registers) {
       try {
         // Skip if no national_id or invalid format
-        if (!register.national_id || typeof register.national_id !== 'string') {
+        if (!register.national_id || typeof register.national_id !== "string") {
           console.warn(`Register ${register._id} has invalid national_id`);
           continue;
         }
@@ -84,26 +91,29 @@ const login = async (req, res) => {
           break;
         }
       } catch (decryptErr) {
-        console.error(`Decryption failed for register ${register._id}:`, decryptErr.message);
+        console.error(
+          `Decryption failed for register ${register._id}:`,
+          decryptErr.message
+        );
         continue;
       }
     }
 
     if (!matchedRegister || !matchedCitizen) {
-      throw new ApiError(HttpStatus.Unauthorized, 'Invalid credentials');
+      throw new ApiError(HttpStatus.Unauthorized, "Invalid credentials");
     }
 
     // Verify password
     const isPasswordValid = await matchedRegister.matchPassword(password);
     if (!isPasswordValid) {
-      throw new ApiError(HttpStatus.Unauthorized, 'Invalid credentials');
+      throw new ApiError(HttpStatus.Unauthorized, "Invalid credentials");
     }
 
     // Generate token
     const accessToken = createToken(
-      { 
+      {
         id: matchedCitizen._id.toString(),
-        national_id: national_id // Using the plain national_id here
+        national_id: national_id, // Using the plain national_id here
       },
       Config.JWT_CITIZEN_SECRET,
       Config.JWT_CITIZEN_SECRET_EXP
@@ -118,21 +128,19 @@ const login = async (req, res) => {
     });
 
     return res.status(HttpStatus.Ok).json(result);
-
   } catch (err) {
-    console.error('Login error:', err);
-    
+    console.error("Login error:", err);
+
     // Handle specific error cases
     let statusCode = err.statusCode || HttpStatus.InternalServerError;
-    let message = err.message || 'Something went wrong';
+    let message = err.message || "Something went wrong";
 
     return res.status(statusCode).json({
-      status: 'error',
-      error: { code: statusCode, message }
+      status: "error",
+      error: { code: statusCode, message },
     });
   }
 };
-
 
 const register = async (req, res) => {
   try {
@@ -140,15 +148,10 @@ const register = async (req, res) => {
       first_name,
       middle_name,
       last_name,
-      date_of_birth,
-      gender,
       national_id,
-      address,
-      Government,
       phone_number,
       email,
       password,
-      marital_status,
     } = req.body;
 
     // Validate required fields
@@ -158,12 +161,14 @@ const register = async (req, res) => {
 
     // Validate encryption key exists
     if (!process.env.ENCRYPTION_KEY) {
-      throw ApiError.serverError("Server configuration error - missing encryption key");
+      throw ApiError.serverError(
+        "Server configuration error - missing encryption key"
+      );
     }
 
     // Check for existing citizen first
     const existingCitizen = await CitizenModel.findOne({
-      $or: [{ email }, { national_id }]
+      $or: [{ email }, { national_id }],
     });
 
     if (existingCitizen) {
@@ -173,8 +178,8 @@ const register = async (req, res) => {
     // Encryption function
     const encrypt = (text) => {
       try {
-        if (!text || typeof text !== 'string') {
-          throw new Error('Invalid text for encryption');
+        if (!text || typeof text !== "string") {
+          throw new Error("Invalid text for encryption");
         }
         const iv = crypto.randomBytes(16);
         const cipher = crypto.createCipheriv(
@@ -182,11 +187,11 @@ const register = async (req, res) => {
           Buffer.from(process.env.ENCRYPTION_KEY),
           iv
         );
-        let encrypted = cipher.update(text, 'utf8', 'hex');
-        encrypted += cipher.final('hex');
-        return `${iv.toString('hex')}:${encrypted}`;
+        let encrypted = cipher.update(text, "utf8", "hex");
+        encrypted += cipher.final("hex");
+        return `${iv.toString("hex")}:${encrypted}`;
       } catch (err) {
-        console.error('Encryption failed:', err);
+        console.error("Encryption failed:", err);
         throw ApiError.serverError("Failed to encrypt data");
       }
     };
@@ -199,21 +204,16 @@ const register = async (req, res) => {
       first_name,
       middle_name,
       last_name,
-      date_of_birth,
-      gender,
       national_id, // Plaintext
-      address,
-      Government,
       phone_number,
       email,
-      marital_status,
     });
 
     // Create register record (encrypted)
     await registerModel.create({
       citizen_id: citizen._id,
       national_id: encryptedNationalId,
-      password: hashedPassword
+      password: hashedPassword,
     });
 
     // Generate token
@@ -232,28 +232,28 @@ const register = async (req, res) => {
     });
 
     return res.status(HttpStatus.Created).json(result);
-
   } catch (err) {
-    console.error('Registration error:', err);
-    
+    console.error("Registration error:", err);
+
     // Handle specific error cases
     let statusCode = HttpStatus.InternalServerError;
     let message = "Something went wrong";
-    
+
     if (err instanceof ApiError) {
       statusCode = err.code;
       message = err.message;
-    } else if (err.name === 'ValidationError') {
+    } else if (err.name === "ValidationError") {
       statusCode = HttpStatus.BadRequest;
       message = err.message;
-    } else if (err.code === 11000) { // MongoDB duplicate key
+    } else if (err.code === 11000) {
+      // MongoDB duplicate key
       statusCode = HttpStatus.BadRequest;
       message = "User already exists";
     }
 
     return res.status(statusCode).json({
-      status: 'error',
-      error: { code: statusCode, message }
+      status: "error",
+      error: { code: statusCode, message },
     });
   }
 };

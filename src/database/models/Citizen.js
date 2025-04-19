@@ -6,11 +6,10 @@ const citizenSchema = new mongoose.Schema(
     first_name: { type: String, required: true },
     middle_name: { type: String, required: true },
     last_name: { type: String, required: true },
-    date_of_birth: { type: Date, required: true },
+    date_of_birth: { type: Date },
     gender: {
       type: String,
       enum: ["Male", "Female"],
-      required: true,
     },
     otp: String,
     otpExpiry: Date,
@@ -20,16 +19,13 @@ const citizenSchema = new mongoose.Schema(
       default: "active",
     },
     national_id: { type: String, unique: true, required: true },
-    address: { type: String, required: true },
-    Government: { type: String, required: true },
+    address: { type: String },
+    Government: { type: String },
     phone_number: { type: String, required: true },
     email: { type: String, unique: true, required: true },
-    points: { type: String },
-
     marital_status: {
       type: String,
       enum: ["Single", "Married", "Divorced", "Widowed"],
-      required: true,
     },
     languagePreference: {
       type: String,
