@@ -14,6 +14,10 @@ const paymentSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "Service",
     },
+    document_id:{
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "DocumentApplication",
+    },
     amount_paid: {
       type: Number,
     },

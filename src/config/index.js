@@ -36,6 +36,9 @@ const Config = {
   CALENDARIFIC_API_KEY: process.env["CALENDARIFIC_API_KEY"],
 
   ENCRYPTION_KEY: process.env["ENCRYPTION_KEY"],
+
+  TWILIO_ACCOUNT_SID: process.env["TWILIO_ACCOUNT_SID"],
+  TWILIO_AUTH_TOKEN: process.env["TWILIO_AUTH_TOKEN"],
   
 };
 
