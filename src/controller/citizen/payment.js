@@ -3,42 +3,65 @@ const ServiceModel = require("../../database/models/services");
 const DepartmentModel = require("../../database/models/department");
 const { PaymentModel } = require("../../database/models/Payment");
 const { CitizenModel } = require("../../database/models/citizen");
+const { DocumentApplicationModel } = require("../../database/models/DocumentApplication")
 const nodemailer = require("nodemailer");
 const { PDFDocument, StandardFonts, rgb } = require('pdf-lib');
 const { param } = require('../../routes/citizen/counts');
 const speakeasy = require('speakeasy');
 require('dotenv').config();
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+const twilio = require("twilio"); // Or, for ESM: import twilio from "twilio";
 
 const app = express();
 app.use(express.json());
 
 const paymentOTP = async (req, res) => {
   try {
-    const { id, service_id } = req.params;
+    const { document_id } = req.params;
 
-    // Validate ID input
-    if (!id) {
-      return res.status(400).json({
+    const document = await DocumentApplicationModel.findById(document_id);
+    if (!document) {
+      return res.status(404).json({
         status: "error",
-        error: { code: 400, message: "User ID is required" },
+        error: { code: 404, message: "service not found" },
       });
     }
+    const payment_done = await PaymentModel.findOne({document_id:document_id})
+    .sort({ createdAt: -1 })
+      .select('status otpExpiry') // Add status to selection
+      .limit(1);
 
-    // Find user by ID
-    const citizen = await CitizenModel.findById(id);
+    // Check if payment exists and is completed
+    if (payment_done) {
+      if (payment_done.status === 'completed') {
+        return res.status(400).json({
+          status: "error",
+          error: { 
+            code: 400, 
+            message: "Payment already completed - cannot request new OTP for paid service" 
+          },
+        });
+      }
+      
+      if (payment_done.status === 'pending' && payment_done.otpExpiry > Date.now()) {
+       
+          const minutesLeft = Math.ceil((payment_done.otpExpiry - Date.now()) / (1000 * 60));
+          return res.status(400).json({
+            status: "error",
+            error: { 
+              code: 400, 
+              message: `OTP already exists and is valid for ${minutesLeft} more minutes - please use the existing OTP` 
+            },
+          });
+      }
+    }
+
+
+    const citizen = await CitizenModel.findById(document.citizen_id);
     if (!citizen || !citizen.email) {
       return res.status(404).json({
         status: "error",
         error: { code: 404, message: "Citizen not found or email missing" },
-      });
-    }
-
-    const service = await ServiceModel.findById(service_id);
-    if (!service) {
-      return res.status(404).json({
-        status: "error",
-        error: { code: 404, message: "service not found" },
       });
     }
 
@@ -56,17 +79,43 @@ const paymentOTP = async (req, res) => {
 
     // Create payment record
     const paymentRecord = new PaymentModel({
-      citizen_id: citizen._id,
+      citizen_id: document.citizen_id,
       otp: otp, // Store the actual OTP, not the secret
       otpSecret: secret, // Store the secret for verification
       otpExpiry: Date.now() + 10 * 60 * 1000,
       transaction_reference: transactionReference, // Add unique reference
       status: 'pending', // Track payment status
-      service_id: service._id
+      service_id: document.service_id,
+      document_id: document._id
     });
 
     await paymentRecord.save();
 
+    // Common message content
+const messageContent = {
+  subject: "Payment Verification OTP - E-Government Documentation System",
+  text: `Your OTP for payment verification is: ${otp}`,
+  html: `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <h2 style="color: #2c3e50;">Payment Verification Request</h2>
+      <p>You requested an OTP for payment verification in the E-Government Documentation System.</p>
+      <p style="font-size: 18px; font-weight: bold;">Your OTP code is: <span style="color: #e74c3c;">${otp}</span></p>
+      <p>This code will expire in 10 minutes.</p>
+      <p>If you didn't request this, please ignore this message.</p>
+      <hr style="border: 0; border-top: 1px solid #eee;">
+      <p style="font-size: 12px; color: #7f8c8d;">E-Government Documentation System Team</p>
+    </div>
+  `,
+  plainText: `Payment Verification Request\n\n` +
+             `You requested an OTP for payment verification in the E-Government Documentation System.\n\n` +
+             `Your OTP code is: ${otp}\n\n` +
+             `This code will expire in 10 minutes.\n\n` +
+             `If you didn't request this, please ignore this message.\n\n` +
+             `---\n` +
+             `E-Government Documentation System Team`
+};
+
+if (document.preferred_contact_method === 'email') {
     const transporter = nodemailer.createTransport({
       host: process.env.EMAIL_HOST,
       port: process.env.EMAIL_PORT || 587,
@@ -96,19 +145,9 @@ const paymentOTP = async (req, res) => {
     const mailOptions = {
       from: `"${process.env.EMAIL_FROM_NAME}" <${process.env.EMAIL_FROM_ADDRESS}>`,
       to: citizen.email.toLowerCase(),
-      subject: "Payment Verification OTP - E-Government Documentation System",
-      text: `Your OTP for payment verification is: ${otp}`,
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #2c3e50;">Payment Verification Request</h2>
-          <p>You requested an OTP for payment verification in the E-Government Documentation System.</p>
-          <p style="font-size: 18px; font-weight: bold;">Your OTP code is: <span style="color: #e74c3c;">${otp}</span></p>
-          <p>This code will expire in 10 minutes.</p>
-          <p>If you didn't request this, please ignore this email.</p>
-          <hr style="border: 0; border-top: 1px solid #eee;">
-          <p style="font-size: 12px; color: #7f8c8d;">E-Government Documentation System Team</p>
-        </div>
-      `,
+      subject: messageContent.subject,
+      text: messageContent.text,
+      html: messageContent.html,
       headers: {
         "X-Mailer": "Node.js",
         "X-Priority": "1",
@@ -117,6 +156,29 @@ const paymentOTP = async (req, res) => {
 
     // Send email
     await transporter.sendMail(mailOptions);
+} else if (document.preferred_contact_method === 'phone') {
+    const accountSid = process.env.TWILIO_ACCOUNT_SID;
+    const authToken = process.env.TWILIO_AUTH_TOKEN;
+    const client = require('twilio')(accountSid, authToken);
+    
+    try {
+      const message = await client.messages.create({
+        body: messageContent.plainText,  // Using the same content as email
+        from: "whatsapp:+14155238886",   // Your Twilio WhatsApp number
+        to: `whatsapp:+2${citizen.phone_number}` // Recipient's WhatsApp number
+      });
+      console.log("WhatsApp message sent:", message.sid);
+    } catch (twilioError) {
+      console.error("Twilio WhatsApp error:", twilioError);
+      return res.status(503).json({
+        status: "error",
+        error: {
+          code: 503,
+          message: "WhatsApp service is currently unavailable",
+        },
+      });
+    }
+}
 
     return res.status(200).json({
       status: "success",
@@ -150,27 +212,34 @@ const paymentOTP = async (req, res) => {
 
 const getPayment = async (req, res) => {
   try {
-    const { paymentMethodId, service_id, id, otp } = req.body;
+    const { paymentMethodId, document_id, otp } = req.body;
 
     // Validate required fields including OTP
-    if (!paymentMethodId || !service_id || !id || !otp) {
+    if (!paymentMethodId || !document_id || !otp) {
       return res.status(400).json({
         success: false,
         message: "Payment method ID, service ID, citizen ID, and OTP are required"
       });
     }
 
-    // Get citizen's details including OTP secret
-    const citizen = await CitizenModel.findById(id);
+    const document = await DocumentApplicationModel.findById(document_id);
+    if (!document) {
+      return res.status(404).json({
+        status: "error",
+        error: { code: 404, message: "Document not found" },
+      });
+    }
+
+    const citizen = await CitizenModel.findById(document.citizen_id);
     if (!citizen || !citizen.email) {
       return res.status(404).json({
-        success: false,
-        message: "Citizen not found"
+        status: "error",
+        error: { code: 404, message: "Citizen not found or email missing" },
       });
     }
 
     // Get the payment record (newest first)
-    const payment = await PaymentModel.findOne({ citizen_id: id })
+    const payment = await PaymentModel.findOne({document_id:document._id})
       .sort({ createdAt: -1 })
       .select('otpSecret otpExpiry otp status') // Add status to selection
       .limit(1);
@@ -221,7 +290,7 @@ const getPayment = async (req, res) => {
     }
 
     // Rest of your existing payment processing logic
-    const service = await ServiceModel.findById(service_id);
+    const service = await ServiceModel.findById(document.service_id);
     if (!service) {
       return res.status(404).json({
         success: false,
@@ -246,10 +315,10 @@ const getPayment = async (req, res) => {
     }
 
     // Get citizen's details from database
-    if (!citizen || !citizen.email) {
+    if (!citizen || !citizen.email || !citizen.phone_number) {
       return res.status(404).json({
         success: false,
-        message: "Citizen not found or email missing"
+        message: "Citizen not found or email missing or phone missing"
       });
     }
 
@@ -271,7 +340,7 @@ const getPayment = async (req, res) => {
         allow_redirects: 'never'
       },
       metadata: {
-        citizen_id: id.toString(),
+        citizen_id: document.citizen_id.toString(),
         project: "University Project",
         service_id: service._id.toString(),
         invoice_number: invoiceNumber // Store our custom invoice number
@@ -294,21 +363,123 @@ const getPayment = async (req, res) => {
       { new: true }
     );
     await updatedPayment.save();
-    // Send bilingual confirmation email if SMTP is configured
-    if (process.env.EMAIL_HOST && process.env.EMAIL_USER && process.env.EMAIL_PASSWORD) {
-      try {
-        // Generate the PDF invoice first
-        const pdfBytes = await generateInvoicePDF({
-          invoiceNumber,
-          invoiceDate,
-          dueDate,
-          service,
-          department,
-          citizen,
-          amount: service.fees,
-          currency: "EGP"
-        });
 
+    // Generate the PDF invoice
+    const pdfBytes = await generateInvoicePDF({
+      invoiceNumber,
+      invoiceDate,
+      dueDate,
+      service,
+      department,
+      citizen,
+      amount: service.fees,
+      currency: "EGP"
+    });
+
+    const paymentDate = new Date().toLocaleString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+
+    // Message templates
+    const messageTemplates = {
+      email: {
+        subject: 'Payment Confirmation / تأكيد الدفع',
+        html: `
+          <div style="font-family: Arial, 'Segoe UI', Tahoma, sans-serif; max-width: 600px; margin: 0 auto;">
+            <!-- English Section -->
+            <div style="margin-bottom: 30px; direction: ltr; text-align: left;">
+              <h1 style="color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 10px;">Payment Confirmation</h1>
+              <p>Dear Valued Customer,</p>
+              <p>We have successfully processed your payment of <strong>${document.service_id.fees} EGP</strong> for the service: <strong>${document.service_id.name}</strong>.</p>
+              <p><strong>Invoice Number: </strong>${invoiceNumber}</p>
+              <p><strong>Payment Date: </strong>${paymentDate}</p>
+              <p>Please find your invoice attached.</p>
+              <p style="margin-top: 20px;">Best regards,<br><strong>${process.env.EMAIL_FROM_NAME}</strong></p>
+            </div>
+            
+            <!-- Arabic Section -->
+            <div style="direction: rtl; text-align: right; margin-top: 40px; border-top: 1px solid #eee; padding-top: 20px;">
+              <h1 style="color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 10px;">تأكيد الدفع</h1>
+              <p>عميلنا الكريم،</p>
+              <p>لقد تمت معالجة دفعتك البالغة <strong>${document.service_id.fees} جنيه مصري</strong> للخدمة: <strong>${document.service_id.name}</strong> بنجاح.</p>
+              <p><strong>رقم الفاتورة: </strong> ${invoiceNumber}</p>
+              <p><strong>تاريخ الدفع: </strong> ${paymentDate}</p>
+              <p>الرجاء الاطلاع على الفاتورة المرفقة.</p>
+              <p style="margin-top: 20px;">مع أطيب التحيات،<br><strong>${process.env.EMAIL_FROM_NAME}</strong></p>
+            </div>
+          </div>
+        `
+      },
+      whatsapp: {
+        text: `
+    *Payment Confirmation / تأكيد الدفع*
+    
+    Dear Valued Customer,
+    We have processed your payment of ${document.service_id.fees} EGP for ${document.service_id.name}.
+    
+    📌 *Invoice Number:* ${invoiceNumber}
+    📅 *Payment Date:* ${paymentDate}
+    
+    *Note:* Your invoice will be sent to your registered email address.
+    
+    _________________________
+    
+    عميلنا الكريم،
+    لقد تمت معالجة دفعتك البالغة ${document.service_id.fees} جنيه مصري للخدمة: ${document.service_id.name}.
+    
+    📌 *رقم الفاتورة:* ${invoiceNumber}
+    📅 *تاريخ الدفع:* ${paymentDate}
+    
+    *ملاحظة:* سيتم إرسال الفاتورة إلى بريدك الإلكتروني المسجل.
+    
+    Best regards,
+    ${process.env.EMAIL_FROM_NAME}
+        `.trim()
+      }
+    };
+
+    // Send notification based on preferred contact method
+    if (document.preferred_contact_method === 'email') {
+      const transporter = nodemailer.createTransport({
+        host: process.env.EMAIL_HOST,
+        port: process.env.EMAIL_PORT || 587,
+        secure: process.env.EMAIL_SECURE === 'true',
+        auth: {
+          user: process.env.EMAIL_USER,
+          pass: process.env.EMAIL_PASSWORD
+        }
+      });
+
+      const mailOptions = {
+        from: `"${process.env.EMAIL_FROM_NAME}" <${process.env.EMAIL_FROM_ADDRESS}>`,
+        to: citizen.email,
+        subject: messageTemplates.email.subject,
+        html: messageTemplates.email.html,
+        attachments: [{
+          filename: `Invoice_${invoiceNumber}.pdf`,
+          content: pdfBytes,
+          contentType: 'application/pdf'
+        }]
+      };
+      await transporter.sendMail(mailOptions);
+    } 
+    else if (document.preferred_contact_method === 'phone') {
+      const accountSid = process.env.TWILIO_ACCOUNT_SID;
+      const authToken = process.env.TWILIO_AUTH_TOKEN;
+      const client = require('twilio')(accountSid, authToken);
+      
+      await client.messages.create({
+        body: messageTemplates.whatsapp.text,
+        from: "whatsapp:+14155238886",
+        to: `whatsapp:+2${citizen.phone_number}`
+      });
+
+      // Send invoice via email even for WhatsApp users
+      if (citizen.email) {
         const transporter = nodemailer.createTransport({
           host: process.env.EMAIL_HOST,
           port: process.env.EMAIL_PORT || 587,
@@ -319,68 +490,19 @@ const getPayment = async (req, res) => {
           }
         });
 
-        const paymentDate = new Date().toLocaleString('en-US', {
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit'
-        });
-
-        const mailOptions = {
+        await transporter.sendMail({
           from: `"${process.env.EMAIL_FROM_NAME}" <${process.env.EMAIL_FROM_ADDRESS}>`,
           to: citizen.email,
-          subject: 'Payment Confirmation / تأكيد الدفع',
-          html: `
-            <div style="font-family: Arial, 'Segoe UI', Tahoma, sans-serif; max-width: 600px; margin: 0 auto;">
-  <!-- English Section -->
-  <div style="margin-bottom: 30px; direction: ltr; text-align: left;">
-    <h1 style="color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 10px;">Payment Confirmation</h1>
-    <p>Dear Valued Customer,</p>
-    <p>We have successfully processed your payment of <strong>${service.fees} EGP</strong> for the service: <strong>${service.name}</strong>.</p>
-    <p><strong>Invoice Number: </strong>${invoiceNumber}</p>
-    <p><strong>Payment Date: </strong>${paymentDate}</p>
-    <p><strong>Processing Time: </strong>${service.processing_time}</p>
-    
-    <p>An official receipt has been sent to this email address from our payment processor.</p>
-    <p>If you have any questions, please contact our support team.</p>
-    <p style="margin-top: 20px;">Best regards,<br><strong>${process.env.EMAIL_FROM_NAME}</strong></p>
-  </div>
-  
-  <!-- Arabic Section -->
-  <div style="direction: rtl; text-align: right; margin-top: 40px; border-top: 1px solid #eee; padding-top: 20px;">
-    <h1 style="color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 10px;">تأكيد الدفع</h1>
-    <p>عميلنا الكريم،</p>
-    <p>لقد تمت معالجة دفعتك البالغة <strong>${service.fees} جنيه مصري</strong> للخدمة: <strong>${service.name}</strong> بنجاح.</p>
-    <p><strong>رقم الفاتورة: </strong> ${invoiceNumber}</p>
-    <p><strong>تاريخ الدفع: </strong> ${paymentDate}</p>
-    <p><strong>مدة العملية: </strong>${service.processing_time}</p>
-
-    <p>تم إرسال إيصال رسمي إلى هذا البريد الإلكتروني من نظام الدفع لدينا.</p>
-    <p>إذا كان لديك أي استفسارات، يرجى التواصل مع فريق الدعم.</p>
-    <p style="margin-top: 20px;">مع أطيب التحيات،<br><strong>${process.env.EMAIL_FROM_NAME}</strong></p>
-  </div>
-  
-  <div style="margin-top: 30px; font-size: 12px; color: #7f8c8d; text-align: center; border-top: 1px solid #eee; padding-top: 15px;">
-    <p>This is an automated message. Please do not reply to this email.</p>
-    <p style="direction: rtl;">هذه رسالة آلية. لا ترد على هذا البريد الإلكتروني.</p>
-  </div>
-</div>
-          `,
+          subject: 'Your Invoice / فاتورتك',
+          text: 'Please find your invoice attached. / يرجى الاطلاع على الفاتورة المرفقة',
           attachments: [{
             filename: `Invoice_${invoiceNumber}.pdf`,
             content: pdfBytes,
-            contentType: 'application/pdf',
-            cid: 'invoicePdf' // Content ID for inline reference
+            contentType: 'application/pdf'
           }]
-        };
-
-        await transporter.sendMail(mailOptions);
-      } catch (emailError) {
-        console.error("Failed to send confirmation email:", emailError);
+        });
       }
     }
-
     res.status(200).json({
       success: true,
       message: "Payment processed successfully",

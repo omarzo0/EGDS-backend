@@ -11,7 +11,7 @@ const router = express.Router();
 
 // Get points
 router.post(
-  "/confirmPayment/:id/:service_id",
+  "/confirmPayment/:document_id",
   //citizenIsAuth,
   changeLanguage,
   paymentOTP
@@ -19,7 +19,7 @@ router.post(
 
 // Get points
 router.get(
-  "/payment/:id",
+  "/payment",
   //citizenIsAuth,
   changeLanguage,
   getPayment

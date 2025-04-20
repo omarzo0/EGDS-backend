@@ -23,9 +23,9 @@ const documentApplicationSchema = new mongoose.Schema(
     
     preferred_contact_method: {
       type: String,
-      enum: ["Email", "Phone"],
+      enum: ["email", "phone"],
       required: true,
-      default: "Phone",
+      default: "phone",
     },
     
     approval_date: { type: Date },
