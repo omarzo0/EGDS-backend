@@ -69,13 +69,13 @@ const createDocument = async (req, res) => {
   try {
     const {
       citizen_id,
-      service_name,
+      serviceid,
       preferred_contact_method,
       amount
     } = req.body;
 
     // Check if the department exists by name
-    const service = await ServiceModel.findOne({ name: service_name });
+    const service = await ServiceModel.findById(serviceid );
     if (!service) {
       return res
         .status(404)
@@ -87,7 +87,7 @@ const createDocument = async (req, res) => {
     if (!citizen) {
       return res
         .status(404)
-        .json({ success: false, message: "Department not found" });
+        .json({ success: false, message: "citizen not found" });
     }
 
     // Get the count of existing documents to generate an auto-incremented document_number
