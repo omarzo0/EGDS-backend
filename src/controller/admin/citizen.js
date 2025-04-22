@@ -4,7 +4,7 @@ const bcrypt = require("bcrypt");
 const getAllCitizen = async (req, res) => {
   try {
     const citizens = await CitizenModel.find().select(
-      "first_name middle_name email last_name date_of_birth national_id address phone_number gender marital_status Government"
+      "first_name middle_name email last_name date_of_birth national_id address phone_number gender marital_status Government wallet_status"
     );
     if (!citizens.length) {
       return res
