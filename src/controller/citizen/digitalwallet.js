@@ -3,7 +3,7 @@ const mongoose = require("mongoose");
 
 const getAllMyDocuments = async (req, res) => {
   try {
-    const { citizen_id } = req.body;
+    const { citizen_id } = req.params;
     const requestingUser = req.user;
 
     if (!citizen_id) {
