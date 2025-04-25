@@ -64,11 +64,10 @@ const getDocumentsByCitizenId = async (req, res) => {
 // Citizen applies for a document
 const createDocument = async (req, res) => {
   try {
-    const { citizen_id, serviceId, preferred_contact_method, amount } =
-      req.body;
+    const { citizen_id, serviceid, preferred_contact_method, amount } = req.body;
 
     // Check if the department exists by name
-    const service = await ServiceModel.findById(serviceid );
+    const service = await ServiceModel.findById(serviceid);
     if (!service) {
       return res.status(404).json({
         success: false,
@@ -77,7 +76,7 @@ const createDocument = async (req, res) => {
     }
 
     // Check if the department exists by name
-    const citizen = await CitizenModel.findOne({ national_id: citizen_id });
+    const citizen = await CitizenModel.findById(citizen_id);
     if (!citizen) {
       return res.status(404).json({
         success: false,
