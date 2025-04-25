@@ -18,8 +18,8 @@ router.post(
 );
 
 // Get points
-router.get(
-  "/payment",
+router.post(
+  "/payment/:the_document_id",
   //citizenIsAuth,
   changeLanguage,
   getPayment

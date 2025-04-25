@@ -18,6 +18,15 @@ app.use(express.json());
 const paymentOTP = async (req, res) => {
   try {
     const { document_id } = req.params;
+    const { paymentMethodId } = req.body;
+
+    // Validate required fields including OTP
+    if (!paymentMethodId || !document_id) {
+      return res.status(400).json({
+        success: false,
+        message: "Payment method ID, service ID, citizen ID, and OTP are required"
+      });
+    }
 
     const document = await DocumentApplicationModel.findById(document_id);
     if (!document) {
@@ -86,7 +95,8 @@ const paymentOTP = async (req, res) => {
       transaction_reference: transactionReference, // Add unique reference
       status: 'pending', // Track payment status
       service_id: document.service_id,
-      document_id: document._id
+      document_id: document._id,
+      paymentMethodId: paymentMethodId
     });
 
     await paymentRecord.save();
@@ -157,19 +167,51 @@ if (document.preferred_contact_method === 'email') {
     // Send email
     await transporter.sendMail(mailOptions);
 } else if (document.preferred_contact_method === 'phone') {
-    const accountSid = process.env.TWILIO_ACCOUNT_SID;
-    const authToken = process.env.TWILIO_AUTH_TOKEN;
-    const client = require('twilio')(accountSid, authToken);
+    const qs = require("querystring");
+    const https = require("https");
     
+    const options = {
+      method: "POST",
+      hostname: "api.ultramsg.com",
+      port: null,
+      path: `/${process.env.ULTRA_MSG_Instance_ID}/messages/chat`,
+      headers: {
+        "content-type": "application/x-www-form-urlencoded"
+      }
+    };
+
     try {
-      const message = await client.messages.create({
-        body: messageContent.plainText,  // Using the same content as email
-        from: "whatsapp:+14155238886",   // Your Twilio WhatsApp number
-        to: `whatsapp:+2${citizen.phone_number}` // Recipient's WhatsApp number
+      const response = await new Promise((resolve, reject) => {
+        const req = https.request(options, (res) => {
+          let chunks = [];
+          
+          res.on("data", (chunk) => {
+            chunks.push(chunk);
+          });
+
+          res.on("end", () => {
+            const body = Buffer.concat(chunks);
+            resolve(body.toString());
+          });
+        });
+
+        req.on("error", (error) => {
+          reject(error);
+        });
+
+        const postData = qs.stringify({
+          token: process.env.ULTRA_MSG_API_ACCESS_TOKEN,
+          to: `+2${citizen.phone_number}`, // Assuming Egyptian number with +2 prefix
+          body: messageContent.plainText
+        });
+
+        req.write(postData);
+        req.end();
       });
-      console.log("WhatsApp message sent:", message.sid);
-    } catch (twilioError) {
-      console.error("Twilio WhatsApp error:", twilioError);
+
+      console.log("WhatsApp message sent successfully:", response);
+    } catch (whatsappError) {
+      console.error("UltraMsg WhatsApp error:", whatsappError);
       return res.status(503).json({
         status: "error",
         error: {
@@ -212,17 +254,18 @@ if (document.preferred_contact_method === 'email') {
 
 const getPayment = async (req, res) => {
   try {
-    const { paymentMethodId, document_id, otp } = req.body;
+    const { the_document_id } = req.params;
+    const { otp } = req.body;
 
     // Validate required fields including OTP
-    if (!paymentMethodId || !document_id || !otp) {
+    if (!the_document_id || !otp) {
       return res.status(400).json({
         success: false,
-        message: "Payment method ID, service ID, citizen ID, and OTP are required"
+        message: "OTP is required"
       });
     }
 
-    const document = await DocumentApplicationModel.findById(document_id);
+    const document = await DocumentApplicationModel.findById(the_document_id);
     if (!document) {
       return res.status(404).json({
         status: "error",
@@ -241,7 +284,7 @@ const getPayment = async (req, res) => {
     // Get the payment record (newest first)
     const payment = await PaymentModel.findOne({document_id:document._id})
       .sort({ createdAt: -1 })
-      .select('otpSecret otpExpiry otp status') // Add status to selection
+      .select('otpSecret otpExpiry otp status paymentMethodId') // Add status to selection
       .limit(1);
 
     if (!payment) {
@@ -332,7 +375,7 @@ const getPayment = async (req, res) => {
     const paymentIntent = await stripe.paymentIntents.create({
       amount: Math.round(service.fees * 100), // Convert to cents
       currency: "EGP",
-      payment_method: paymentMethodId,
+      payment_method: payment.paymentMethodId,
       receipt_email: citizen.email,
       confirm: true,
       automatic_payment_methods: {
@@ -468,15 +511,59 @@ const getPayment = async (req, res) => {
       await transporter.sendMail(mailOptions);
     } 
     else if (document.preferred_contact_method === 'phone') {
-      const accountSid = process.env.TWILIO_ACCOUNT_SID;
-      const authToken = process.env.TWILIO_AUTH_TOKEN;
-      const client = require('twilio')(accountSid, authToken);
+      const qs = require("querystring");
+      const https = require("https");
       
-      await client.messages.create({
-        body: messageTemplates.whatsapp.text,
-        from: "whatsapp:+14155238886",
-        to: `whatsapp:+2${citizen.phone_number}`
-      });
+      const options = {
+        method: "POST",
+        hostname: "api.ultramsg.com",
+        port: null,
+        path: `/${process.env.ULTRA_MSG_Instance_ID}/messages/chat`,
+        headers: {
+          "content-type": "application/x-www-form-urlencoded"
+        }
+      };
+  
+      try {
+        const response = await new Promise((resolve, reject) => {
+          const req = https.request(options, (res) => {
+            let chunks = [];
+            
+            res.on("data", (chunk) => {
+              chunks.push(chunk);
+            });
+  
+            res.on("end", () => {
+              const body = Buffer.concat(chunks);
+              resolve(body.toString());
+            });
+          });
+  
+          req.on("error", (error) => {
+            reject(error);
+          });
+  
+          const postData = qs.stringify({
+            token: process.env.ULTRA_MSG_API_ACCESS_TOKEN,
+            to: `+2${citizen.phone_number}`, // Assuming Egyptian number with +2 prefix
+            body: messageTemplates.whatsapp.text
+          });
+  
+          req.write(postData);
+          req.end();
+        });
+  
+        console.log("WhatsApp message sent successfully:", response);
+      } catch (whatsappError) {
+        console.error("UltraMsg WhatsApp error:", whatsappError);
+        return res.status(503).json({
+          status: "error",
+          error: {
+            code: 503,
+            message: "WhatsApp service is currently unavailable",
+          },
+        });
+      }
 
       // Send invoice via email even for WhatsApp users
       if (citizen.email) {

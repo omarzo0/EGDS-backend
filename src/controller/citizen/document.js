@@ -75,7 +75,7 @@ const createDocument = async (req, res) => {
     } = req.body;
 
     // Check if the department exists by name
-    const service = await ServiceModel.findById(serviceid );
+    const service = await ServiceModel.findById(serviceid);
     if (!service) {
       return res
         .status(404)
@@ -83,7 +83,7 @@ const createDocument = async (req, res) => {
     }
 
     // Check if the department exists by name
-    const citizen = await CitizenModel.findOne({ national_id: citizen_id });
+    const citizen = await CitizenModel.findById( citizen_id );
     if (!citizen) {
       return res
         .status(404)
