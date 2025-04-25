@@ -84,6 +84,7 @@ const createDocument = async (req, res) => {
         details: `Tried finding with: ${citizen_id}`,
       });
     }
+    
 
     // Generate document number
     const documentCount = await DocumentApplicationModel.countDocuments();
