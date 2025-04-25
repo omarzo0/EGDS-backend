@@ -21,6 +21,9 @@ const paymentSchema = new mongoose.Schema(
     amount_paid: {
       type: Number,
     },
+    paymentMethodId: {
+      type: String 
+    },
     currency: {
       type: String,
       default: "EGP",

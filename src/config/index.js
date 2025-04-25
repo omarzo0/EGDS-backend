@@ -39,6 +39,10 @@ const Config = {
 
   TWILIO_ACCOUNT_SID: process.env["TWILIO_ACCOUNT_SID"],
   TWILIO_AUTH_TOKEN: process.env["TWILIO_AUTH_TOKEN"],
+
+  ULTRA_MSG_Instance_ID: process.env["ULTRA_MSG_Instance_ID"],
+  ULTRA_MSG_API_ACCESS_TOKEN: process.env["ULTRA_MSG_API_ACCESS_TOKEN"],
+
   
 };
 
