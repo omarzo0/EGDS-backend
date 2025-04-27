@@ -19,7 +19,7 @@ router.post(
 
 // Get points
 router.post(
-  "/payment/:the_document_id",
+  "/payment/:document_id",
   //citizenIsAuth,
   changeLanguage,
   getPayment

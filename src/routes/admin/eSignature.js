@@ -35,13 +35,6 @@ router.get(
   // adminAllowedTo([AdminRole.SUPER_ADMIN, AdminRole.ADMIN, AdminRole.OFFICER]),
   getSignatureListById
 );
-router.post(
-  "/signatures",
-  // adminIsAuth,
-  // changeLanguage,
-  // adminAllowedTo([AdminRole.SUPER_ADMIN, AdminRole.ADMIN, AdminRole.OFFICER]),
-  handleSignature
-);
 router.put(
   "/signature/:id",
   // adminIsAuth,

@@ -69,117 +69,59 @@ const getSignatureListById = async (req, res) => {
     });
   }
 };
+
+
 const handleSignature = async (req, res) => {
   try {
-    // CREATE NEW SIGNATURE (Citizen action)
-    if (req.method === "POST") {
-      const { document_id, description, document_type, uploaded_document_url } =
-        req.body;
+    const { status, uploaded_document_url } = req.body;
+    const { rejection_reason } = req.body; // Separate line since it's optional
+    const id = req.params.id || req.body.document_id;
 
-      // Validate required fields
-      if (!document_type) {
-        return res.status(400).json({
-          success: false,
-          message: "Missing required field: document_type",
-        });
-      }
-
-      // Check for either file upload or URL
-      const hasFileUpload = req.file && req.file.path;
-      const hasDocumentUrl =
-        uploaded_document_url &&
-        typeof uploaded_document_url === "string" &&
-        uploaded_document_url.trim() !== "";
-
-      if (!hasFileUpload && !hasDocumentUrl) {
-        return res.status(400).json({
-          success: false,
-          message: "Either uploaded_document file or URL is required",
-        });
-      }
-
-      const citizen_id = req.user?._id;
-
-      const newSignature = new eSignatureModel({
-        citizen_id, // Now safely included
-        document_id: document_id || new mongoose.Types.ObjectId(),
-        description: description || "No description provided",
-        document_type,
-        uploaded_document: hasFileUpload
-          ? req.file.path
-          : uploaded_document_url,
-        status: "Pending",
-      });
-      await newSignature.save();
-
-      return res.status(201).json({
-        success: true,
-        message: "Signature request created successfully",
-        data: {
-          id: newSignature._id,
-          document_id: newSignature.document_id,
-          document_type: newSignature.document_type,
-          status: newSignature.status,
-          document_url: newSignature.uploaded_document,
-          uploaded_date: newSignature.createdAt,
-        },
+    if (!id) {
+      return res.status(400).json({
+        success: false,
+        message: "Document ID is required in either URL params or request body",
       });
     }
 
-    // UPDATE SIGNATURE (Admin action)
-    if (req.method === "PUT") {
-      // Get ID from both URL params and body (prefer params if both exist)
-      const id = req.params.id || req.body.document_id;
+    // Find the existing signature
+    const signature = await eSignatureModel.findById(id);
+    if (!signature) {
+      return res.status(404).json({
+        success: false,
+        message: "Signature not found",
+      });
+    }
 
-      if (!id) {
-        return res.status(400).json({
-          success: false,
-          message:
-            "Document ID is required in either URL params or request body",
-        });
-      }
+    let updatedSignature;
 
-      const signature = await eSignatureModel.findById(id);
-      if (!signature) {
-        return res.status(404).json({
-          success: false,
-          message: "Signature not found",
-        });
-      }
-
-      const updateData = {
-        description: req.body.description || signature.description,
-        updatedAt: new Date(),
-      };
-
-      // Handle document signing with captured signature
-      if (req.body.signature_data) {
+    // Handle document signing
+    if (status === "Signed") {
+      // Handle base64 signature data
+      if (uploaded_document_url && uploaded_document_url.startsWith('data:image')) {
         try {
-          const base64Data = req.body.signature_data.replace(
-            /^data:image\/\w+;base64,/,
-            ""
-          );
+          const base64Data = uploaded_document_url.replace(/^data:image\/\w+;base64,/, "");
           const buffer = Buffer.from(base64Data, "base64");
           const filename = `signature-${id}-${Date.now()}.png`;
-          const filePath = path.join(
-            __dirname,
-            "../../uploads/signatures",
-            filename
-          );
+          const filePath = path.join(__dirname, "../../uploads/signatures", filename);
 
-          fs.mkdirSync(path.dirname(filePath), { recursive: true });
-          fs.writeFileSync(filePath, buffer);
+          // Ensure directory exists
+          await fs.promises.mkdir(path.dirname(filePath), { recursive: true });
+          await fs.promises.writeFile(filePath, buffer);
 
-          if (
-            signature.signed_document &&
-            fs.existsSync(signature.signed_document)
-          ) {
-            fs.unlinkSync(signature.signed_document);
+          // Clean up old file if it exists
+          if (signature.signed_document && await fileExists(signature.signed_document)) {
+            await fs.promises.unlink(signature.signed_document);
           }
 
-          updateData.signed_document = filePath;
-          updateData.status = "Signed";
-          updateData.signed_date = new Date();
+          updatedSignature = await eSignatureModel.findByIdAndUpdate(
+            signature._id,
+            {
+              signed_document: filePath,
+              status
+            },
+            { new: true }
+          );
         } catch (error) {
           return res.status(400).json({
             success: false,
@@ -187,61 +129,88 @@ const handleSignature = async (req, res) => {
             error: error.message,
           });
         }
-      }
+      } 
       // Handle file upload
       else if (req.file) {
-        if (
-          signature.signed_document &&
-          fs.existsSync(signature.signed_document)
-        ) {
-          fs.unlinkSync(signature.signed_document);
-        }
+        try {
+          // Clean up old file if it exists
+          if (signature.signed_document && await fileExists(signature.signed_document)) {
+            await fs.promises.unlink(signature.signed_document);
+          }
 
-        updateData.signed_document = req.file.path;
-        updateData.status = "Signed";
-        updateData.signed_date = new Date();
-      }
-      // Handle rejection
-      else if (req.body.status === "Rejected") {
-        if (!req.body.rejection_reason) {
+          updatedSignature = await eSignatureModel.findByIdAndUpdate(
+            signature._id,
+            {
+              signed_document: req.file.path,
+              status
+            },
+            { new: true }
+          );
+        } catch (error) {
           return res.status(400).json({
             success: false,
-            message: "Rejection reason is required when rejecting",
+            message: "Failed to process uploaded file",
+            error: error.message,
           });
         }
-        updateData.status = "Rejected";
-        updateData.rejection_reason = req.body.rejection_reason;
+      } else {
+        return res.status(400).json({
+          success: false,
+          message: "Valid signature data (base64 image or file upload) is required for signing",
+        });
       }
-      // Handle other status updates
-      else if (req.body.status) {
-        updateData.status = req.body.status;
+    }
+    // Handle rejection
+    else if (status === "Rejected") {
+      if (!rejection_reason) {
+        return res.status(400).json({
+          success: false,
+          message: "Rejection reason is required when rejecting",
+        });
       }
 
-      const updatedSignature = await eSignatureModel.findByIdAndUpdate(
-        id,
-        updateData,
+      updatedSignature = await eSignatureModel.findByIdAndUpdate(
+        signature._id,
+        {
+          status,
+          rejection_reason,
+        },
         { new: true }
       );
-
-      return res.status(200).json({
-        success: true,
-        message: "Signature updated successfully",
-        data: updatedSignature,
+    } else {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid status provided",
       });
     }
 
-    return res.status(405).json({
-      success: false,
-      message: "Method not allowed",
+    return res.status(200).json({
+      success: true,
+      message: "Signature updated successfully",
+      data: updatedSignature,
     });
+
   } catch (error) {
-    res.status(500).json({
+    console.error("Error in handleSignature:", error);
+    return res.status(500).json({
       success: false,
       message: "Operation failed",
       error: error.message,
     });
   }
 };
+
+// Helper function to check if file exists
+async function fileExists(filePath) {
+  try {
+    await fs.promises.access(filePath);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+
 // Delete an e-signature record
 const deleteSignature = async (req, res) => {
   try {

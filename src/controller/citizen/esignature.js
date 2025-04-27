@@ -62,26 +62,20 @@ const getAllEpapers = async (req, res) => {
 
 const createEpaper = async (req, res) => {
   try {
-    const { id, service_name, document_type, description, uploaded_document } =
+    const { service_id, description, uploaded_document } =
       req.body;
+    const { citizenId } = req.params;
 
     // Validation
-    if (!service_name || !document_type || !uploaded_document) {
+    if (!service_id || !uploaded_document) {
       return res.status(400).json({
         success: false,
         message:
-          "Missing required fields: service_name, document_type, uploaded_document",
+          "Missing required fields: document type, uploaded document",
       });
     }
 
-    const [citizen, service] = await Promise.all([
-      CitizenModel.findById(id),
-      ServiceModel.findOne({
-        name: { $regex: new RegExp(`^${service_name}$`, "i") },
-        serviceType: "esignature", // Only look for e-signature services
-      }).populate("department_id"),
-    ]);
-
+    const citizen = await CitizenModel.findById(citizenId);
     if (!citizen) {
       return res.status(404).json({
         success: false,
@@ -89,39 +83,19 @@ const createEpaper = async (req, res) => {
       });
     }
 
+    const service = await ServiceModel.findById(service_id);
     if (!service) {
-      // Get only e-signature services for the error message
-      const esignServices = await ServiceModel.find({
-        serviceType: "esignature",
-      });
-
       return res.status(404).json({
         success: false,
-        message: "E-signature service not found",
-        available_esign_services: esignServices.map((s) => ({
-          id: s._id,
-          name: s.name,
-          department: s.department_id.name,
-        })),
-        note: "Only services with serviceType 'esignature' are available for e-signing",
-      });
-    }
-
-    // Verify the service is actually an e-signature service
-    if (service.serviceType !== "esignature") {
-      return res.status(400).json({
-        success: false,
-        message: "This service is not available for e-signature",
+        message: "service not found",
       });
     }
 
     const newEpaper = await eSignatureModel.create({
-      citizen_id: id,
+      citizen_id: citizenId,
       department_id: service.department_id,
       service_id: service._id,
       description: description || "No description provided",
-      document_type,
-      service_name: service.name,
       uploaded_document,
     });
 
@@ -131,17 +105,15 @@ const createEpaper = async (req, res) => {
       data: {
         id: newEpaper._id,
         citizen_id: newEpaper.citizen_id,
-        citizen_name: `${citizen.first_name} ${citizen.last_name}`,
+        citizen_name: `${citizen.first_name}${citizen.last_name}`,
         department: {
-          id: service.department_id._id,
+          id: service.department_id,
           name: service.department_id.name,
         },
         service: {
           id: service._id,
-          name: newEpaper.service_name,
-          type: service.serviceType, // Include service type in response
+          name: service.name,
         },
-        document_type: newEpaper.document_type,
         status: newEpaper.status,
         uploaded_date: newEpaper.createdAt,
         document_url: newEpaper.uploaded_document,

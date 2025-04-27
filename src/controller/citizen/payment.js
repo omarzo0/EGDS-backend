@@ -254,18 +254,18 @@ if (document.preferred_contact_method === 'email') {
 
 const getPayment = async (req, res) => {
   try {
-    const { the_document_id } = req.params;
+    const { document_id } = req.params;
     const { otp } = req.body;
 
     // Validate required fields including OTP
-    if (!the_document_id || !otp) {
+    if (!document_id || !otp) {
       return res.status(400).json({
         success: false,
         message: "OTP is required"
       });
     }
 
-    const document = await DocumentApplicationModel.findById(the_document_id);
+    const document = await DocumentApplicationModel.findById(document_id);
     if (!document) {
       return res.status(404).json({
         status: "error",
