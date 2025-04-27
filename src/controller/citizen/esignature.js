@@ -1,106 +1,130 @@
 const ServiceModel = require("../../database/models/services");
 const { eSignatureModel } = require("../../database/models/eSignature");
-const { CitizenModel } = require("../../database/models/citizen"); 
+const { CitizenModel } = require("../../database/models/citizen");
 const mongoose = require("mongoose");
-
 
 const getAllEpapers = async (req, res) => {
   try {
-    const { id } = req.body;
-    // Check if the citizen exists by id
-    const epapers = await CitizenModel.find({_id: id});
-    if (!epapers) {
+    const { id } = req.params;
+
+    // Check if the citizen exists
+    const citizen = await CitizenModel.findById(id);
+    if (!citizen) {
       return res
         .status(404)
-        .json({ success: false, message: "citizen not found" });
+        .json({ success: false, message: "Citizen not found" });
     }
 
-    // Find documents using the same ID format stored in documents
-    const documents = await eSignatureModel.find({ citizen_id: id })
+    // Find documents and populate related fields
+    const documents = await eSignatureModel
+      .find({ citizen_id: id })
+      .populate("service_id", "name") // Only get name from service
+      .populate("department_id", "name"); // Only get name from department
 
     if (!documents.length) {
       return res.status(200).json({
         success: true,
         message: "No documents found for this citizen",
-        data: []
+        data: [],
       });
     }
 
-    // Format the response to match your structure
     const response = {
       success: true,
-      documents: documents.map(doc => ({
+      documents: documents.map((doc) => ({
         id: doc._id,
-        service: doc.service_id, // Included from your schema
-        department: doc.department_id,      // Direct string from your schema
+        service: doc.service_id ? doc.service_id.name : null,
+        department: doc.department_id ? doc.department_id.name : null,
         description: doc.description,
+        document_type: doc.document_type, // Add this if you want to show document type
         status: doc.status,
-        uploaded_document: doc.uploaded_document,
+        uploaded_document: doc.uploaded_document, // This should contain your URL
+        document_url: doc.document_url,
+        uploaded_document_url: doc.uploaded_document_url,
         signed_document: doc.signed_document,
-        signed_date: doc.signed_date,    // Using createdAt from timestamps
-        last_update: doc.updatedAt       // Using updatedAt from timestamps
-      }))
+        signed_date: doc.signed_date,
+        rejection_reason: doc.rejection_reason,
+        last_update: doc.updatedAt,
+        createdAt: doc.createdAt,
+      })),
     };
 
     res.status(200).json(response);
-
   } catch (error) {
     console.error("Error in getDocumentsByCitizenId:", error);
     res.status(500).json({
       success: false,
       message: "Failed to retrieve documents",
-      error: error.message
+      error: error.message,
     });
   }
 };
 
-
 const createEpaper = async (req, res) => {
   try {
-    // Extract data from request body
-    const { 
-      id,
-      document_type,  // This should be the service name
-      description, 
-      uploaded_document 
-    } = req.body;
+    const { id, service_name, document_type, description, uploaded_document } =
+      req.body;
 
-    // Validate required fields
-    if (!document_type || !description || !uploaded_document) {
+    // Validation
+    if (!service_name || !document_type || !uploaded_document) {
       return res.status(400).json({
         success: false,
-        message: "Missing required fields: document_type, description, uploaded_document"
+        message:
+          "Missing required fields: service_name, document_type, uploaded_document",
       });
     }
 
-    // Check if the citizen exists
-    const citizen = await CitizenModel.findById(id);
+    const [citizen, service] = await Promise.all([
+      CitizenModel.findById(id),
+      ServiceModel.findOne({
+        name: { $regex: new RegExp(`^${service_name}$`, "i") },
+        serviceType: "esignature", // Only look for e-signature services
+      }).populate("department_id"),
+    ]);
+
     if (!citizen) {
-      return res.status(404).json({ 
-        success: false, 
-        message: "Citizen not found" 
+      return res.status(404).json({
+        success: false,
+        message: "Citizen not found",
       });
     }
 
-    // Find the service by name and populate department info
-    const service = await ServiceModel.findOne({name: document_type});
     if (!service) {
-      return res.status(404).json({ 
-        success: false, 
-        message: "Service not found" 
+      // Get only e-signature services for the error message
+      const esignServices = await ServiceModel.find({
+        serviceType: "esignature",
+      });
+
+      return res.status(404).json({
+        success: false,
+        message: "E-signature service not found",
+        available_esign_services: esignServices.map((s) => ({
+          id: s._id,
+          name: s.name,
+          department: s.department_id.name,
+        })),
+        note: "Only services with serviceType 'esignature' are available for e-signing",
       });
     }
 
-    // Create new e-signature document
+    // Verify the service is actually an e-signature service
+    if (service.serviceType !== "esignature") {
+      return res.status(400).json({
+        success: false,
+        message: "This service is not available for e-signature",
+      });
+    }
+
     const newEpaper = await eSignatureModel.create({
       citizen_id: id,
-      department_id: service.department_id, // Store department reference
-      service_id: service._id,      // Store service reference
-      description,
-      uploaded_document
+      department_id: service.department_id,
+      service_id: service._id,
+      description: description || "No description provided",
+      document_type,
+      service_name: service.name,
+      uploaded_document,
     });
 
-    // Return success response
     res.status(201).json({
       success: true,
       message: "E-signature document created successfully",
@@ -110,36 +134,103 @@ const createEpaper = async (req, res) => {
         citizen_name: `${citizen.first_name} ${citizen.last_name}`,
         department: {
           id: service.department_id._id,
-          name: newEpaper.department
+          name: service.department_id.name,
         },
         service: {
           id: service._id,
-          name: newEpaper.document_type
+          name: newEpaper.service_name,
+          type: service.serviceType, // Include service type in response
         },
+        document_type: newEpaper.document_type,
         status: newEpaper.status,
         uploaded_date: newEpaper.createdAt,
-        document_url: newEpaper.uploaded_document
-      }
+        document_url: newEpaper.uploaded_document,
+      },
     });
-
   } catch (error) {
-    console.error("Error creating e-signature document:", error);
-
-    if (error.name === 'MongoNetworkError' || error.message.includes('ECONNRESET')) {
-      return res.status(503).json({
-        success: false,
-        message: "Database connection error. Please try again later."
-      });
-    }
-    
+    console.error("Error:", error);
     res.status(500).json({
       success: false,
       message: "Internal server error",
-      error: error.message
+      error: error.message,
     });
   }
 };
 
+const getAvailableESignServices = async (req, res) => {
+  try {
+    const services = await ServiceModel.find({
+      serviceType: "esignature",
+    }).populate("department_id", "name");
+
+    res.status(200).json({
+      success: true,
+      data: services.map((s) => ({
+        id: s._id,
+        name: s.name,
+        description: s.Description,
+        department: {
+          id: s.department_id._id,
+          name: s.department_id.name,
+        },
+        processing_time: s.processing_time,
+      })),
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch e-signature services",
+      error: error.message,
+    });
+  }
+};
+const getESignServicesByDepartment = async (req, res) => {
+  try {
+    const { department_id } = req.params;
+
+    // Validate department_id is a valid ObjectId
+    if (!mongoose.Types.ObjectId.isValid(department_id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid department ID format",
+      });
+    }
+
+    const services = await ServiceModel.find({
+      serviceType: "esignature",
+      department_id: department_id,
+    }).populate("department_id", "name");
+
+    if (services.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "No e-signature services found for this department",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: services.map((s) => ({
+        id: s._id,
+        name: s.name,
+        description: s.Description,
+        department: {
+          id: s.department_id._id,
+          name: s.department_id.name,
+        },
+        processing_time: s.processing_time,
+        fees: s.fees,
+        points: s.points,
+      })),
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch e-signature services",
+      error: error.message,
+    });
+  }
+};
 const deleteEpaper = async (req, res) => {
   try {
     // Get the paper ID from request parameters
@@ -152,7 +243,7 @@ const deleteEpaper = async (req, res) => {
     if (!paper) {
       return res.status(404).json({
         success: false,
-        message: "E-paper not found"
+        message: "E-paper not found",
       });
     }
 
@@ -160,8 +251,9 @@ const deleteEpaper = async (req, res) => {
     if (paper.status !== "Pending") {
       return res.status(403).json({
         success: false,
-        message: "Cannot delete e-paper. Only papers with 'Pending' status can be deleted",
-        currentStatus: paper.status
+        message:
+          "Cannot delete e-paper. Only papers with 'Pending' status can be deleted",
+        currentStatus: paper.status,
       });
     }
 
@@ -175,16 +267,15 @@ const deleteEpaper = async (req, res) => {
       deletedPaper: {
         id: paper._id,
         document_type: paper.document_type,
-        citizen_id: paper.citizen_id
-      }
+        citizen_id: paper.citizen_id,
+      },
     });
-
   } catch (error) {
     console.error("Error deleting e-paper:", error);
     res.status(500).json({
       success: false,
       message: "Internal server error",
-      error: error.message
+      error: error.message,
     });
   }
 };
@@ -193,4 +284,6 @@ module.exports = {
   getAllEpapers,
   createEpaper,
   deleteEpaper,
+  getAvailableESignServices,
+  getESignServicesByDepartment,
 };
