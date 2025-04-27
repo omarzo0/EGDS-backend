@@ -151,7 +151,7 @@ const register = async (req, res) => {
       national_id,
       phone_number,
       email,
-      password,
+      password
     } = req.body;
 
     // Validate required fields
