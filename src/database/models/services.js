@@ -11,9 +11,24 @@ const serviceSchema = new mongoose.Schema(
       index: true,
     },
     fees: { type: Number, required: true },
-    points: { type: Number, required: true },
     processing_time: { type: String, required: true },
     usageCount: { type: Number, default: 0 },
+
+    serviceType: {
+      type: String,
+      required: true,
+      enum: ["application", "esignature"],
+      default: "application",
+    },
+    additionalInformation: { type: String },
+    importantNotes: { type: String },
+    availableLocations: [
+      {
+        name: { type: String, required: true },
+        address: { type: String, required: true },
+        operatingHours: { type: String, required: true },
+      },
+    ],
   },
   { timestamps: true }
 );

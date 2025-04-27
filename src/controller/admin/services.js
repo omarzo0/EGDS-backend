@@ -1,12 +1,12 @@
 const ServiceModel = require("../../database/models/services");
 const DepartmentModel = require("../../database/models/department");
 
-//  Get All Services
+// Get All Services
 const getAllServices = async (req, res) => {
   try {
     const services = await ServiceModel.find().populate({
-      path: "department_id", // The field to populate
-      select: "name", // Only include the department's name
+      path: "department_id",
+      select: "name",
     });
 
     res.status(200).json({ success: true, services });
@@ -19,11 +19,20 @@ const getAllServices = async (req, res) => {
   }
 };
 
-//  Create a New Service
+// Create a New Service
 const createService = async (req, res) => {
   try {
-    const { name, departmentName, Description, fees, points, processing_time } =
-      req.body;
+    const {
+      name,
+      departmentName,
+      Description,
+      fees,
+      processing_time,
+      serviceType,
+      additionalInformation,
+      importantNotes,
+      availableLocations,
+    } = req.body;
 
     // Check if the department exists by name
     const department = await DepartmentModel.findOne({ name: departmentName });
@@ -33,21 +42,34 @@ const createService = async (req, res) => {
         .json({ success: false, message: "Department not found" });
     }
 
+    // Validate serviceType
+    if (serviceType && !["application", "esignature"].includes(serviceType)) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Invalid serviceType. Must be either 'application' or 'esignature'",
+      });
+    }
+
     // Create the new service
     const newService = new ServiceModel({
       name,
       Description,
-      department_id: department._id, // Use the department's _id
+      department_id: department._id,
       fees,
-      points,
       processing_time,
+      serviceType: serviceType || "application",
+      additionalInformation,
+      importantNotes,
+      availableLocations: availableLocations || [],
     });
+
     await newService.save();
 
     // Increment the serviceCount for the department
     await DepartmentModel.findByIdAndUpdate(
       department._id,
-      { $inc: { serviceCount: 1 } }, // Increment serviceCount by 1
+      { $inc: { serviceCount: 1 } },
       { new: true }
     );
 
@@ -65,12 +87,21 @@ const createService = async (req, res) => {
   }
 };
 
-//  Update Service
+// Update Service
 const updateService = async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, departmentName, Description, fees, points, processing_time } =
-      req.body;
+    const {
+      name,
+      departmentName,
+      Description,
+      fees,
+      processing_time,
+      serviceType,
+      additionalInformation,
+      importantNotes,
+      availableLocations,
+    } = req.body;
 
     const service = await ServiceModel.findById(id);
     if (!service) {
@@ -92,12 +123,30 @@ const updateService = async (req, res) => {
       department_id = department._id;
     }
 
+    // Validate serviceType if provided
+    if (serviceType && !["application", "esignature"].includes(serviceType)) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Invalid serviceType. Must be either 'application' or 'esignature'",
+      });
+    }
+
+    // Update service fields
     service.name = name || service.name;
     service.Description = Description || service.Description;
     service.fees = fees || service.fees;
-    service.points = points || service.points;
     service.processing_time = processing_time || service.processing_time;
     service.department_id = department_id;
+    service.serviceType = serviceType || service.serviceType;
+    service.additionalInformation =
+      additionalInformation || service.additionalInformation;
+    service.importantNotes = importantNotes || service.importantNotes;
+
+    // Only update availableLocations if provided
+    if (availableLocations) {
+      service.availableLocations = availableLocations;
+    }
 
     await service.save();
 
@@ -120,12 +169,11 @@ const updateService = async (req, res) => {
   }
 };
 
-//  Delete Service
+// Delete Service
 const deleteService = async (req, res) => {
   try {
     const { id } = req.params;
 
-    // Find the service to get the department_id
     const service = await ServiceModel.findById(id);
     if (!service) {
       return res
@@ -133,13 +181,11 @@ const deleteService = async (req, res) => {
         .json({ success: false, message: "Service not found" });
     }
 
-    // Delete the service
     await ServiceModel.findByIdAndDelete(id);
 
-    // Decrement the serviceCount for the department
     await DepartmentModel.findByIdAndUpdate(
       service.department_id,
-      { $inc: { serviceCount: -1 } }, // Decrement serviceCount by 1
+      { $inc: { serviceCount: -1 } },
       { new: true }
     );
 
@@ -155,11 +201,12 @@ const deleteService = async (req, res) => {
     });
   }
 };
+
 // Get service count
 const getServiceCount = async (req, res) => {
   try {
     const count = await ServiceModel.countDocuments();
-    res.status(200).json(count); // Return just the number
+    res.status(200).json(count);
   } catch (error) {
     res.status(500).json({
       success: false,
@@ -168,6 +215,7 @@ const getServiceCount = async (req, res) => {
     });
   }
 };
+
 // Get most booked services this month
 const getMostBookedServicesThisMonth = async (req, res) => {
   try {
@@ -178,7 +226,6 @@ const getMostBookedServicesThisMonth = async (req, res) => {
       1
     );
 
-    // Since you're using usageCount, we'll just sort by that
     const mostBooked = await ServiceModel.find()
       .sort({ usageCount: -1 })
       .limit(10)
@@ -199,6 +246,7 @@ const getMostBookedServicesThisMonth = async (req, res) => {
     });
   }
 };
+
 module.exports = {
   getAllServices,
   createService,

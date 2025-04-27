@@ -5,21 +5,27 @@ const eSignatureSchema = new mongoose.Schema(
     citizen_id: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Citizen",
-      required: true,
     },
     department_id: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Department",
-      required: true,
-      index: true, // Indexing for performance
+
+      index: true,
     },
     service_id: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Service",
-      required: true,
+
       index: true,
     },
+    service_name: {
+      type: String,
+    },
     description: {
+      type: String,
+      required: true,
+    },
+    document_type: {
       type: String,
       required: true,
     },

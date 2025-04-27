@@ -1,5 +1,6 @@
 const { eSignatureModel } = require("../../database/models/eSignature");
-const mongoose = require("mongoose");
+const fs = require("fs");
+const path = require("path");
 
 const getAllSignature = async (req, res) => {
   try {
@@ -12,9 +13,9 @@ const getAllSignature = async (req, res) => {
 
     const signatures = await eSignatureModel
       .find(filter)
-      .populate("citizen_id", "name email") // Populate citizen details
-      .populate("department_id", "name") // Populate department name
-      .populate("service_id", "name"); // Populate service name
+      .populate("citizen_id", "name email")
+      .populate("department_id", "name")
+      .populate("service_id", "name");
 
     res.status(200).json({
       success: true,
@@ -30,7 +31,6 @@ const getAllSignature = async (req, res) => {
   }
 };
 
-// Get a specific e-signature by ID
 const getSignatureListById = async (req, res) => {
   try {
     const { id } = req.params;
@@ -48,9 +48,18 @@ const getSignatureListById = async (req, res) => {
       });
     }
 
+    // Return signed document if available, otherwise original
+    const documentToShow =
+      signature.signed_document || signature.uploaded_document;
+    const isSigned = signature.status === "Signed";
+
     res.status(200).json({
       success: true,
-      data: signature,
+      data: {
+        ...signature.toObject(),
+        current_document: documentToShow,
+        is_signed: isSigned,
+      },
     });
   } catch (error) {
     res.status(500).json({
@@ -60,80 +69,159 @@ const getSignatureListById = async (req, res) => {
     });
   }
 };
-
 const handleSignature = async (req, res) => {
   try {
     // CREATE NEW SIGNATURE (Citizen action)
     if (req.method === "POST") {
-      const { citizen_id, department_id, service_id, description } = req.body;
+      const { document_id, description, document_type, uploaded_document_url } =
+        req.body;
 
-      if (!req.file && !req.body.uploaded_document_url) {
+      // Validate required fields
+      if (!document_type) {
+        return res.status(400).json({
+          success: false,
+          message: "Missing required field: document_type",
+        });
+      }
+
+      // Check for either file upload or URL
+      const hasFileUpload = req.file && req.file.path;
+      const hasDocumentUrl =
+        uploaded_document_url &&
+        typeof uploaded_document_url === "string" &&
+        uploaded_document_url.trim() !== "";
+
+      if (!hasFileUpload && !hasDocumentUrl) {
         return res.status(400).json({
           success: false,
           message: "Either uploaded_document file or URL is required",
         });
       }
 
+      const citizen_id = req.user?._id;
+
       const newSignature = new eSignatureModel({
-        citizen_id,
-        department_id,
-        service_id,
-        description,
-        uploaded_document: req.file?.path || req.body.uploaded_document_url,
+        citizen_id, // Now safely included
+        document_id: document_id || new mongoose.Types.ObjectId(),
+        description: description || "No description provided",
+        document_type,
+        uploaded_document: hasFileUpload
+          ? req.file.path
+          : uploaded_document_url,
         status: "Pending",
       });
-
       await newSignature.save();
 
       return res.status(201).json({
         success: true,
         message: "Signature request created successfully",
-        data: newSignature,
+        data: {
+          id: newSignature._id,
+          document_id: newSignature.document_id,
+          document_type: newSignature.document_type,
+          status: newSignature.status,
+          document_url: newSignature.uploaded_document,
+          uploaded_date: newSignature.createdAt,
+        },
       });
     }
 
     // UPDATE SIGNATURE (Admin action)
     if (req.method === "PUT") {
-      const { id } = req.params;
-      const { status, description, rejection_reason } = req.body;
+      // Get ID from both URL params and body (prefer params if both exist)
+      const id = req.params.id || req.body.document_id;
 
-      const updateData = {
-        description,
-        updatedAt: new Date(),
-      };
-
-      // Handle document signing
-      if (req.file) {
-        updateData.signed_document = req.file.path;
-        updateData.status = "Signed";
-        updateData.signed_date = new Date();
-      }
-      // Handle rejection
-      else if (status === "Rejected") {
-        if (!rejection_reason) {
-          return res.status(400).json({
-            success: false,
-            message: "Rejection reason is required",
-          });
-        }
-        updateData.status = "Rejected";
-        updateData.rejection_reason = rejection_reason;
-      }
-      // Handle other status updates
-      else if (status) {
-        updateData.status = status;
+      if (!id) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Document ID is required in either URL params or request body",
+        });
       }
 
-      const updatedSignature = await eSignatureModel
-        .findByIdAndUpdate(id, updateData, { new: true })
-        .populate("citizen_id", "name email");
-
-      if (!updatedSignature) {
+      const signature = await eSignatureModel.findById(id);
+      if (!signature) {
         return res.status(404).json({
           success: false,
           message: "Signature not found",
         });
       }
+
+      const updateData = {
+        description: req.body.description || signature.description,
+        updatedAt: new Date(),
+      };
+
+      // Handle document signing with captured signature
+      if (req.body.signature_data) {
+        try {
+          const base64Data = req.body.signature_data.replace(
+            /^data:image\/\w+;base64,/,
+            ""
+          );
+          const buffer = Buffer.from(base64Data, "base64");
+          const filename = `signature-${id}-${Date.now()}.png`;
+          const filePath = path.join(
+            __dirname,
+            "../../uploads/signatures",
+            filename
+          );
+
+          fs.mkdirSync(path.dirname(filePath), { recursive: true });
+          fs.writeFileSync(filePath, buffer);
+
+          if (
+            signature.signed_document &&
+            fs.existsSync(signature.signed_document)
+          ) {
+            fs.unlinkSync(signature.signed_document);
+          }
+
+          updateData.signed_document = filePath;
+          updateData.status = "Signed";
+          updateData.signed_date = new Date();
+        } catch (error) {
+          return res.status(400).json({
+            success: false,
+            message: "Failed to process signature image",
+            error: error.message,
+          });
+        }
+      }
+      // Handle file upload
+      else if (req.file) {
+        if (
+          signature.signed_document &&
+          fs.existsSync(signature.signed_document)
+        ) {
+          fs.unlinkSync(signature.signed_document);
+        }
+
+        updateData.signed_document = req.file.path;
+        updateData.status = "Signed";
+        updateData.signed_date = new Date();
+      }
+      // Handle rejection
+      else if (req.body.status === "Rejected") {
+        if (!req.body.rejection_reason) {
+          return res.status(400).json({
+            success: false,
+            message: "Rejection reason is required when rejecting",
+          });
+        }
+        updateData.status = "Rejected";
+        updateData.rejection_reason = req.body.rejection_reason;
+      }
+      // Handle other status updates
+      else if (req.body.status) {
+        updateData.status = req.body.status;
+      }
+
+      const updatedSignature = await eSignatureModel.findByIdAndUpdate(
+        id,
+        updateData,
+        { new: true }
+      );
 
       return res.status(200).json({
         success: true,
@@ -154,26 +242,35 @@ const handleSignature = async (req, res) => {
     });
   }
 };
-
 // Delete an e-signature record
 const deleteSignature = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const deletedSignature = await eSignatureModel.findByIdAndDelete(id);
-
-    if (!deletedSignature) {
+    const signature = await eSignatureModel.findById(id);
+    if (!signature) {
       return res.status(404).json({
         success: false,
         message: "Signature not found",
       });
     }
 
-    // TODO: You might want to delete the associated files here
+    // Delete associated files
+    if (
+      signature.uploaded_document &&
+      fs.existsSync(signature.uploaded_document)
+    ) {
+      fs.unlinkSync(signature.uploaded_document);
+    }
+    if (signature.signed_document && fs.existsSync(signature.signed_document)) {
+      fs.unlinkSync(signature.signed_document);
+    }
+
+    await eSignatureModel.findByIdAndDelete(id);
 
     res.status(200).json({
       success: true,
-      message: "Signature deleted successfully",
+      message: "Signature and associated files deleted successfully",
     });
   } catch (error) {
     res.status(500).json({
@@ -183,28 +280,22 @@ const deleteSignature = async (req, res) => {
     });
   }
 };
+
 const getSignatureCounts = async (req, res) => {
   try {
-    // Get current date at start of day for filtering
     const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);
 
     const todayEnd = new Date();
     todayEnd.setHours(23, 59, 59, 999);
 
-    // Execute all count queries in parallel
     const [pendingCount, processedTodayCount, totalProcessedCount] =
       await Promise.all([
-        // Pending documents count
         eSignatureModel.countDocuments({ status: "Pending" }),
-
-        // Documents processed today (signed or rejected)
         eSignatureModel.countDocuments({
           status: { $in: ["Signed", "Rejected"] },
           updatedAt: { $gte: todayStart, $lte: todayEnd },
         }),
-
-        // Total processed documents (all signed/rejected)
         eSignatureModel.countDocuments({
           status: { $in: ["Signed", "Rejected"] },
         }),
@@ -226,6 +317,7 @@ const getSignatureCounts = async (req, res) => {
     });
   }
 };
+
 module.exports = {
   getAllSignature,
   getSignatureListById,
