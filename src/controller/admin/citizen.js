@@ -1,5 +1,8 @@
 const { CitizenModel } = require("../../database/models/citizen");
+const { registerModel } = require("../../database/models/register");
 const bcrypt = require("bcrypt");
+const crypto = require("crypto");
+require("dotenv").config();
 
 const getAllCitizen = async (req, res) => {
   try {
@@ -63,6 +66,30 @@ const createCitizen = async (req, res) => {
       });
     }
 
+    // Encryption function
+        const encrypt = (text) => {
+          try {
+            if (!text || typeof text !== "string") {
+              throw new Error("Invalid text for encryption");
+            }
+            const iv = crypto.randomBytes(16);
+            const cipher = crypto.createCipheriv(
+              "aes-256-cbc",
+              Buffer.from(process.env.ENCRYPTION_KEY),
+              iv
+            );
+            let encrypted = cipher.update(text, "utf8", "hex");
+            encrypted += cipher.final("hex");
+            return `${iv.toString("hex")}:${encrypted}`;
+          } catch (err) {
+            console.error("Encryption failed:", err);
+            throw ApiError.serverError("Failed to encrypt data");
+          }
+        };
+    
+        const hashedPassword = await bcrypt.hash(password, 10);
+        const encryptedNationalId = encrypt(national_id);
+
     const newCitizen = new CitizenModel({
       first_name,
       middle_name,
@@ -73,10 +100,17 @@ const createCitizen = async (req, res) => {
       phone_number,
       gender,
       marital_status,
-      password,
       email,
       Government,
     });
+
+    // Create register record (encrypted)
+        await registerModel.create({
+          citizen_id: newCitizen._id,
+          national_id: encryptedNationalId,
+          password: hashedPassword,
+        });
+    
     await newCitizen.save();
     res.status(201).json({
       success: true,
