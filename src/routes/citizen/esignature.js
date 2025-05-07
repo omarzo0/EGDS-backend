@@ -1,6 +1,7 @@
 const express = require("express");
 const {
   getAllEpapers,
+  downloadEpaper,
   createEpaper,
   deleteEpaper,
   getAvailableESignServices,
@@ -18,6 +19,15 @@ router.get(
   changeLanguage,
   getAllEpapers
 );
+
+router.get(
+  "/esignature_download/:signed_id",
+  //citizenIsAuth,
+  changeLanguage,
+  downloadEpaper
+);
+
+
 router.get(
   "/esignature-services",
   //citizenIsAuth,
@@ -36,6 +46,8 @@ router.post(
   changeLanguage,
   createEpaper
 );
+
+
 
 // Delete e-signature paper
 router.delete(
