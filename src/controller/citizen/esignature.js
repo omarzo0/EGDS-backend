@@ -60,6 +60,89 @@ const getAllEpapers = async (req, res) => {
   }
 };
 
+
+const downloadEpaper = async (req, res) => {
+  try {
+    const { signed_id } = req.params;
+
+    // Find document by ID and populate related fields
+    const document = await eSignatureModel
+      .findById(signed_id)
+      .populate("service_id", "name")
+      .populate("department_id", "name");
+
+    if (!document) {
+      return res.status(404).json({ 
+        success: false, 
+        message: "Document not found" 
+      });
+    }
+
+    // Check if the request is for downloading the document
+    if (req.query.download && document.status.toLowerCase() === 'signed') {
+      if (!document.signed_document) {
+        return res.status(404).json({
+          success: false,
+          message: "Signed document not found",
+        });
+      }
+
+      // Handle file download
+      const filePath = document.signed_document;
+      const fileName = `${document.service_id?.name || 'document'}_${document._id}.pdf`;
+      
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename=${fileName}`);
+      
+      if (filePath.startsWith('http')) {
+        // For remote URLs
+        const response = await fetch(filePath);
+        const fileBuffer = await response.buffer();
+        return res.send(fileBuffer);
+      } else {
+        // For local files
+        return res.download(filePath);
+      }
+    }
+
+    // If not downloading, return the document info
+    const response = {
+      success: true,
+      message: "Document found",
+      data: {
+        id: document._id,
+        service: document.service_id ? document.service_id.name : null,
+        department: document.department_id ? document.department_id.name : null,
+        description: document.description,
+        document_type: document.document_type,
+        status: document.status,
+        uploaded_document: document.uploaded_document,
+        document_url: document.document_url,
+        uploaded_document_url: document.uploaded_document_url,
+        signed_document: document.signed_document,
+        signed_date: document.signed_date,
+        rejection_reason: document.rejection_reason,
+        last_update: document.updatedAt,
+        createdAt: document.createdAt,
+        download_link: document.status.toLowerCase() === 'signed' 
+          ? `${req.originalUrl.split('?')[0]}?download=true` 
+          : null,
+      }
+    };
+
+    res.status(200).json(response);
+  } catch (error) {
+    console.error("Error in downloadEpaper:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to process document",
+      error: error.message,
+    });
+  }
+};
+
+
+
 const createEpaper = async (req, res) => {
   try {
     const { service_id, description, uploaded_document, citizenId } = req.body;
@@ -253,6 +336,7 @@ const deleteEpaper = async (req, res) => {
 module.exports = {
   getAllEpapers,
   createEpaper,
+  downloadEpaper,
   deleteEpaper,
   getAvailableESignServices,
   getESignServicesByDepartment,
