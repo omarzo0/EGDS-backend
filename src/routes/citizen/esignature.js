@@ -31,7 +31,7 @@ router.get(
 );
 // Create e-signature paper
 router.post(
-  "/esignature/:citizenId",
+  "/esignature",
   //citizenIsAuth,
   changeLanguage,
   createEpaper

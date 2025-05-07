@@ -62,16 +62,14 @@ const getAllEpapers = async (req, res) => {
 
 const createEpaper = async (req, res) => {
   try {
-    const { service_id, description, uploaded_document } =
-      req.body;
-    const { citizenId } = req.params;
+    const { service_id, description, uploaded_document, citizenId } = req.body;
 
     // Validation
-    if (!service_id || !uploaded_document) {
+    if (!service_id || !uploaded_document || !citizenId) {
       return res.status(400).json({
         success: false,
         message:
-          "Missing required fields: document type, uploaded document",
+          "Missing required fields: citizenId, service_id, or uploaded document",
       });
     }
 
@@ -87,7 +85,7 @@ const createEpaper = async (req, res) => {
     if (!service) {
       return res.status(404).json({
         success: false,
-        message: "service not found",
+        message: "Service not found",
       });
     }
 
