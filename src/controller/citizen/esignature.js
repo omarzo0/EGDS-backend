@@ -2,7 +2,8 @@ const ServiceModel = require("../../database/models/services");
 const { eSignatureModel } = require("../../database/models/eSignature");
 const { CitizenModel } = require("../../database/models/citizen");
 const mongoose = require("mongoose");
-
+const path = require("path");
+const fetch = require('node-fetch');
 const getAllEpapers = async (req, res) => {
   try {
     const { id } = req.params;
@@ -65,7 +66,6 @@ const downloadEpaper = async (req, res) => {
   try {
     const { signed_id } = req.params;
 
-    // Find document by ID and populate related fields
     const document = await eSignatureModel
       .findById(signed_id)
       .populate("service_id", "name")
@@ -78,7 +78,6 @@ const downloadEpaper = async (req, res) => {
       });
     }
 
-    // Check if the request is for downloading the document
     if (req.query.download && document.status.toLowerCase() === 'signed') {
       if (!document.signed_document) {
         return res.status(404).json({
@@ -87,32 +86,38 @@ const downloadEpaper = async (req, res) => {
         });
       }
 
-      // Handle file download
       const filePath = document.signed_document;
-      const fileName = `${document.service_id?.name || 'document'}_${document._id}.pdf`;
-      
-      res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', `attachment; filename=${fileName}`);
-      
+      const ext = path.extname(filePath);
+      const fileName = `${document.service_id?.name || 'document'}_${document._id}${ext}`;
+
+      res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+
       if (filePath.startsWith('http')) {
-        // For remote URLs
+        // Remote file (optional fallback)
         const response = await fetch(filePath);
+        if (!response.ok) {
+          return res.status(500).json({
+            success: false,
+            message: "Failed to fetch remote document.",
+          });
+        }
         const fileBuffer = await response.buffer();
         return res.send(fileBuffer);
       } else {
-        // For local files
-        return res.download(filePath);
+        // Local file
+        const absolutePath = path.resolve(filePath);
+        return res.download(absolutePath);
       }
     }
 
-    // If not downloading, return the document info
+    // Not a download request – return metadata
     const response = {
       success: true,
       message: "Document found",
       data: {
         id: document._id,
-        service: document.service_id ? document.service_id.name : null,
-        department: document.department_id ? document.department_id.name : null,
+        service: document.service_id?.name || null,
+        department: document.department_id?.name || null,
         description: document.description,
         document_type: document.document_type,
         status: document.status,
@@ -130,7 +135,7 @@ const downloadEpaper = async (req, res) => {
       }
     };
 
-    res.status(200).json(response);
+    return res.status(200).json(response);
   } catch (error) {
     console.error("Error in downloadEpaper:", error);
     res.status(500).json({
@@ -142,43 +147,37 @@ const downloadEpaper = async (req, res) => {
 };
 
 
-
 const createEpaper = async (req, res) => {
   try {
-    const { service_id, description, uploaded_document, citizenId } = req.body;
+    const { service_id, description, citizenId } = req.body;
+    const uploaded_document = req.file?.path;
 
-    // Validation
     if (!service_id || !uploaded_document || !citizenId) {
       return res.status(400).json({
         success: false,
-        message:
-          "Missing required fields: citizenId, service_id, or uploaded document",
+        message: "Missing required fields: citizenId, service_id, or uploaded document",
       });
     }
 
     const citizen = await CitizenModel.findById(citizenId);
     if (!citizen) {
-      return res.status(404).json({
-        success: false,
-        message: "Citizen not found",
-      });
+      return res.status(404).json({ success: false, message: "Citizen not found" });
     }
 
-    const service = await ServiceModel.findById(service_id);
+    const service = await ServiceModel.findById(service_id).populate('department_id');
     if (!service) {
-      return res.status(404).json({
-        success: false,
-        message: "Service not found",
-      });
+      return res.status(404).json({ success: false, message: "Service not found" });
     }
 
     const newEpaper = await eSignatureModel.create({
       citizen_id: citizenId,
-      department_id: service.department_id,
+      department_id: service.department_id._id,
       service_id: service._id,
       description: description || "No description provided",
       uploaded_document,
     });
+
+    const baseUrl = `${req.protocol}://${req.get('host')}`;
 
     res.status(201).json({
       success: true,
@@ -186,9 +185,9 @@ const createEpaper = async (req, res) => {
       data: {
         id: newEpaper._id,
         citizen_id: newEpaper.citizen_id,
-        citizen_name: `${citizen.first_name}${citizen.last_name}`,
+        citizen_name: `${citizen.first_name} ${citizen.last_name}`,
         department: {
-          id: service.department_id,
+          id: service.department_id._id,
           name: service.department_id.name,
         },
         service: {
@@ -197,7 +196,7 @@ const createEpaper = async (req, res) => {
         },
         status: newEpaper.status,
         uploaded_date: newEpaper.createdAt,
-        document_url: newEpaper.uploaded_document,
+        document_url: `${baseUrl}/${uploaded_document}`,
       },
     });
   } catch (error) {

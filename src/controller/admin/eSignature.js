@@ -1,6 +1,8 @@
 const { eSignatureModel } = require("../../database/models/eSignature");
 const fs = require("fs");
 const path = require("path");
+const fetch = require("node-fetch");
+const mime = require("mime-types");
 
 const getAllSignature = async (req, res) => {
   try {
@@ -70,7 +72,6 @@ const getSignatureListById = async (req, res) => {
   }
 };
 
-
 const handleSignature = async (req, res) => {
   try {
     const { status, uploaded_document_url } = req.body;
@@ -98,19 +99,32 @@ const handleSignature = async (req, res) => {
     // Handle document signing
     if (status === "Signed") {
       // Handle base64 signature data
-      if (uploaded_document_url && uploaded_document_url.startsWith('data:image')) {
+      if (
+        uploaded_document_url &&
+        uploaded_document_url.startsWith("data:image")
+      ) {
         try {
-          const base64Data = uploaded_document_url.replace(/^data:image\/\w+;base64,/, "");
+          const base64Data = uploaded_document_url.replace(
+            /^data:image\/\w+;base64,/,
+            ""
+          );
           const buffer = Buffer.from(base64Data, "base64");
           const filename = `signature-${id}-${Date.now()}.png`;
-          const filePath = path.join(__dirname, "../../uploads/signatures", filename);
+          const filePath = path.join(
+            __dirname,
+            "../../uploads/signatures",
+            filename
+          );
 
           // Ensure directory exists
           await fs.promises.mkdir(path.dirname(filePath), { recursive: true });
           await fs.promises.writeFile(filePath, buffer);
 
           // Clean up old file if it exists
-          if (signature.signed_document && await fileExists(signature.signed_document)) {
+          if (
+            signature.signed_document &&
+            (await fileExists(signature.signed_document))
+          ) {
             await fs.promises.unlink(signature.signed_document);
           }
 
@@ -118,7 +132,7 @@ const handleSignature = async (req, res) => {
             signature._id,
             {
               signed_document: filePath,
-              status
+              status,
             },
             { new: true }
           );
@@ -129,12 +143,15 @@ const handleSignature = async (req, res) => {
             error: error.message,
           });
         }
-      } 
+      }
       // Handle file upload
       else if (req.file) {
         try {
           // Clean up old file if it exists
-          if (signature.signed_document && await fileExists(signature.signed_document)) {
+          if (
+            signature.signed_document &&
+            (await fileExists(signature.signed_document))
+          ) {
             await fs.promises.unlink(signature.signed_document);
           }
 
@@ -142,7 +159,7 @@ const handleSignature = async (req, res) => {
             signature._id,
             {
               signed_document: req.file.path,
-              status
+              status,
             },
             { new: true }
           );
@@ -156,7 +173,8 @@ const handleSignature = async (req, res) => {
       } else {
         return res.status(400).json({
           success: false,
-          message: "Valid signature data (base64 image or file upload) is required for signing",
+          message:
+            "Valid signature data (base64 image or file upload) is required for signing",
         });
       }
     }
@@ -189,7 +207,6 @@ const handleSignature = async (req, res) => {
       message: "Signature updated successfully",
       data: updatedSignature,
     });
-
   } catch (error) {
     console.error("Error in handleSignature:", error);
     return res.status(500).json({
@@ -209,7 +226,6 @@ async function fileExists(filePath) {
     return false;
   }
 }
-
 
 // Delete an e-signature record
 const deleteSignature = async (req, res) => {
@@ -286,6 +302,96 @@ const getSignatureCounts = async (req, res) => {
     });
   }
 };
+const downloadEpaper = async (req, res) => {
+  const contentType = mime.lookup(filePath) || "application/octet-stream";
+  res.setHeader("Content-Type", contentType);
+  try {
+    const { signed_id } = req.params;
+
+    const document = await eSignatureModel
+      .findById(signed_id)
+      .populate("service_id", "name")
+      .populate("department_id", "name");
+
+    if (!document) {
+      return res.status(404).json({
+        success: false,
+        message: "Document not found",
+      });
+    }
+
+    // --- DOWNLOAD LOGIC (WORKS FOR ANY STATUS) ---
+    if (req.query.download) {
+      const filePath = document.uploaded_document; // ← Always use uploaded document
+
+      if (!filePath) {
+        return res.status(404).json({
+          success: false,
+          message: "No uploaded document file found",
+        });
+      }
+
+      const ext = path.extname(filePath);
+      const fileName = `${document.service_id?.name || "document"}_${
+        document._id
+      }${ext}`;
+
+      res.setHeader(
+        "Content-Disposition",
+        `attachment; filename="${fileName}"`
+      );
+      res.setHeader("Content-Type", contentType);
+
+      if (filePath.startsWith("http")) {
+        const response = await fetch(filePath);
+        if (!response.ok) {
+          return res.status(500).json({
+            success: false,
+            message: "Failed to fetch remote document",
+          });
+        }
+        const fileBuffer = await response.buffer();
+        return res.send(fileBuffer);
+      } else {
+        const absolutePath = path.resolve(filePath);
+        return res.download(absolutePath);
+      }
+    }
+
+    // --- METADATA RESPONSE (NON-DOWNLOAD REQUEST) ---
+    const response = {
+      success: true,
+      message: "Document found",
+      data: {
+        id: document._id,
+        service: document.service_id?.name || null,
+        department: document.department_id?.name || null,
+        description: document.description,
+        document_type: document.document_type,
+        status: document.status,
+        uploaded_document: document.uploaded_document,
+        document_url: document.document_url,
+        uploaded_document_url: document.uploaded_document_url,
+        signed_document: document.signed_document,
+        signed_date: document.signed_date,
+        rejection_reason: document.rejection_reason,
+        last_update: document.updatedAt,
+        createdAt: document.createdAt,
+        // Always include download link (regardless of status)
+        download_link: `${req.originalUrl.split("?")[0]}?download=true`,
+      },
+    };
+
+    return res.status(200).json(response);
+  } catch (error) {
+    console.error("Error in downloadEpaper:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to process document",
+      error: error.message,
+    });
+  }
+};
 
 module.exports = {
   getAllSignature,
@@ -293,4 +399,5 @@ module.exports = {
   handleSignature,
   deleteSignature,
   getSignatureCounts,
+  downloadEpaper,
 };
