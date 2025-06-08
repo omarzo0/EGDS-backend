@@ -6,15 +6,9 @@ i18next.use(Backend).init({
   lng: "en",
   defaultNS: "translation",
   fallbackLng: "en",
+
   backend: {
-    loadPath: join(
-      __dirname,
-      "..",
-      "..",
-      "locales",
-      "{{lng}}",
-      "{{ns}}.json"
-    ),
+    loadPath: join(__dirname, "..", "..", "locales", "{{lng}}", "{{ns}}.json"),
   },
   interpolation: {
     escapeValue: false,
