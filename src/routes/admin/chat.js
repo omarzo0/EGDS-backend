@@ -14,7 +14,7 @@ const router = express.Router();
 router.get(
   "/Chat-List",
   // adminIsAuth,
-  // changeLanguage,
+  changeLanguage,
   // adminAllowedTo([AdminRole.SUPER_ADMIN]),
   listChatQuestions
 );
@@ -22,7 +22,7 @@ router.get(
 router.post(
   "/create-Q&A",
   // adminIsAuth,
-  // changeLanguage,
+  changeLanguage,
   // adminAllowedTo([AdminRole.SUPER_ADMIN]),
   addChatQuestion
 );
@@ -30,7 +30,7 @@ router.post(
 router.put(
   "/update-Q&A/:id",
   // adminIsAuth,
-  // changeLanguage,
+  changeLanguage,
   // adminAllowedTo([AdminRole.SUPER_ADMIN]),
   updateChatQuestion
 );
@@ -38,7 +38,7 @@ router.put(
 router.delete(
   "/delete-Q&A/:id",
   // adminIsAuth,
-  // changeLanguage,
+  changeLanguage,
   // adminAllowedTo([AdminRole.SUPER_ADMIN]),
   deleteChatQuestion
 );

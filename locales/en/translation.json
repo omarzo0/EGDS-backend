@@ -11,6 +11,11 @@
       "required": "Password is required.",
       "minLength": "Password must be at least 6 characters long.",
       "maxLength": "Password must be at most 30 characters long."
+    },
+    "chat": {
+      "questionRequired": "Question is required",
+      "answerRequired": "Answer is required",
+      "atLeastOneField": "At least one field (question or answer) is required to update"
     }
   },
   "error": {
