@@ -1,6 +1,7 @@
 const { AdminModel } = require("../../database/models/admin");
 const asyncHandler = require("express-async-handler");
 const mongoose = require("mongoose");
+const { updateAdminProfileSchema } = require("../../validation/admin/profile");
 
 const getAdminProfile = asyncHandler(async (req, res) => {
   try {
@@ -72,7 +73,16 @@ const getAdminProfile = asyncHandler(async (req, res) => {
 
 const updateAdminProfile = asyncHandler(async (req, res) => {
   try {
-    // 2. Get Admin ID from params or authenticated user
+    const { error } = updateAdminProfileSchema.validate(req.body);
+    if (error) {
+      return res.status(400).json({
+        status: "error",
+        error: {
+          code: 400,
+          message: error.details[0].message,
+        },
+      });
+    }
     const adminId = req.params.id;
 
     // 3. Validate ID format

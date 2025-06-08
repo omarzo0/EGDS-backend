@@ -3,6 +3,10 @@ const { registerModel } = require("../../database/models/register");
 const bcrypt = require("bcrypt");
 const crypto = require("crypto");
 require("dotenv").config();
+const {
+  createCitizenSchema,
+  updateCitizenSchema,
+} = require("../../validation/admin/citizen");
 
 const getAllCitizen = async (req, res) => {
   try {
@@ -24,6 +28,18 @@ const getAllCitizen = async (req, res) => {
 
 const createCitizen = async (req, res) => {
   try {
+    const { error, value } = createCitizenSchema.validate(req.body, {
+      abortEarly: false,
+    });
+
+    if (error) {
+      return res.status(400).json({
+        success: false,
+        message: "Validation failed",
+        errors: error.details.map((detail) => detail.message),
+      });
+    }
+
     const {
       first_name,
       middle_name,
@@ -37,58 +53,33 @@ const createCitizen = async (req, res) => {
       gender,
       marital_status,
       password,
-    } = req.body;
-    if (
-      !first_name ||
-      !middle_name ||
-      !last_name ||
-      !date_of_birth ||
-      !national_id ||
-      !address ||
-      !phone_number ||
-      !gender ||
-      !marital_status ||
-      !password ||
-      !email ||
-      !Government
-    ) {
-      return res
-        .status(400)
-        .json({ success: false, message: "All fields are required" });
-    }
-    const existingCitizens = await CitizenModel.findOne({
+    } = value;
+
+    const existingCitizen = await CitizenModel.findOne({
       $or: [{ email }, { national_id }],
     });
-    if (existingCitizens) {
+
+    if (existingCitizen) {
       return res.status(400).json({
         success: false,
         message: "Email or National ID already in use",
       });
     }
 
-    // Encryption function
-        const encrypt = (text) => {
-          try {
-            if (!text || typeof text !== "string") {
-              throw new Error("Invalid text for encryption");
-            }
-            const iv = crypto.randomBytes(16);
-            const cipher = crypto.createCipheriv(
-              "aes-256-cbc",
-              Buffer.from(process.env.ENCRYPTION_KEY),
-              iv
-            );
-            let encrypted = cipher.update(text, "utf8", "hex");
-            encrypted += cipher.final("hex");
-            return `${iv.toString("hex")}:${encrypted}`;
-          } catch (err) {
-            console.error("Encryption failed:", err);
-            throw ApiError.serverError("Failed to encrypt data");
-          }
-        };
-    
-        const hashedPassword = await bcrypt.hash(password, 10);
-        const encryptedNationalId = encrypt(national_id);
+    const encrypt = (text) => {
+      const iv = crypto.randomBytes(16);
+      const cipher = crypto.createCipheriv(
+        "aes-256-cbc",
+        Buffer.from(process.env.ENCRYPTION_KEY),
+        iv
+      );
+      let encrypted = cipher.update(text, "utf8", "hex");
+      encrypted += cipher.final("hex");
+      return `${iv.toString("hex")}:${encrypted}`;
+    };
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const encryptedNationalId = encrypt(national_id);
 
     const newCitizen = new CitizenModel({
       first_name,
@@ -104,14 +95,14 @@ const createCitizen = async (req, res) => {
       Government,
     });
 
-    // Create register record (encrypted)
-        await registerModel.create({
-          citizen_id: newCitizen._id,
-          national_id: encryptedNationalId,
-          password: hashedPassword,
-        });
-    
+    await registerModel.create({
+      citizen_id: newCitizen._id,
+      national_id: encryptedNationalId,
+      password: hashedPassword,
+    });
+
     await newCitizen.save();
+
     res.status(201).json({
       success: true,
       message: "Citizen created successfully",
@@ -128,23 +119,36 @@ const createCitizen = async (req, res) => {
 
 const updateCitizen = async (req, res) => {
   try {
+    const { error, value } = updateCitizenSchema.validate(req.body, {
+      abortEarly: false,
+    });
+
+    if (error) {
+      return res.status(400).json({
+        success: false,
+        message: "Validation failed",
+        errors: error.details.map((detail) => detail.message),
+      });
+    }
+
     const { id } = req.params;
 
-    const updatedCitizen = await CitizenModel.findById(id);
-    if (!updatedCitizen) {
+    const existingCitizen = await CitizenModel.findById(id);
+    if (!existingCitizen) {
       return res.status(404).json({ message: "Citizen not found" });
     }
 
-    if (req.body.password) {
-      req.body.password = await bcrypt.hash(req.body.password, 10);
+    if (value.password) {
+      value.password = await bcrypt.hash(value.password, 10);
     }
-    const UpdatedCitizen = await CitizenModel.findByIdAndUpdate(id, req.body, {
+
+    const updatedCitizen = await CitizenModel.findByIdAndUpdate(id, value, {
       new: true,
     });
 
     res.status(200).json({
       message: "Citizen updated successfully",
-      citizen: UpdatedCitizen,
+      citizen: updatedCitizen,
     });
   } catch (error) {
     res
