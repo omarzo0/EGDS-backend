@@ -2,9 +2,17 @@ const { NotificationModel } = require("../../database/models/Notification");
 const mongoose = require("mongoose");
 const { CitizenModel } = require("../../database/models/citizen");
 const { AdminModel } = require("../../database/models/admin");
+const { notificationSchema } = require("../../validation/admin/notification");
 
 const sendNotificationToCitizen = async (req, res) => {
   try {
+    const { error } = notificationSchema.validate(req.body);
+    if (error) {
+      return res.status(400).json({
+        success: false,
+        message: error.details[0].message,
+      });
+    }
     const { citizenId } = req.params;
     const { title, message } = req.body;
 
@@ -56,6 +64,13 @@ const sendNotificationToCitizen = async (req, res) => {
 
 const sendNotificationToAllCitizens = async (req, res) => {
   try {
+    const { error } = notificationSchema.validate(req.body);
+    if (error) {
+      return res.status(400).json({
+        success: false,
+        message: error.details[0].message,
+      });
+    }
     const { title, message } = req.body;
 
     if (!title || !message) {
@@ -136,6 +151,13 @@ const sendNotificationToAdminsByType = async (req, res) => {
   session.startTransaction();
 
   try {
+    const { error } = notificationSchema.validate(req.body);
+    if (error) {
+      return res.status(400).json({
+        success: false,
+        message: error.details[0].message,
+      });
+    }
     const { title, message, role } = req.body;
 
     if (!title || !message || !role) {
@@ -205,6 +227,13 @@ const sendNotificationToAdminsByType = async (req, res) => {
 
 const sendNotificationToAdmin = async (req, res) => {
   try {
+    const { error } = notificationSchema.validate(req.body);
+    if (error) {
+      return res.status(400).json({
+        success: false,
+        message: error.details[0].message,
+      });
+    }
     const { adminId } = req.params;
     const { title, message } = req.body;
 
@@ -263,6 +292,13 @@ const sendNotificationToAllAdmins = async (req, res) => {
   session.startTransaction();
 
   try {
+    const { error } = notificationSchema.validate(req.body);
+    if (error) {
+      return res.status(400).json({
+        success: false,
+        message: error.details[0].message,
+      });
+    }
     const { title, message } = req.body;
 
     if (!title || !message) {
@@ -437,6 +473,5 @@ module.exports = {
   sendNotificationToAllAdmins,
   sendExpirationNotification,
   countUnreadNotificationsForAdmin,
-
   markAllNotificationsRead,
 };

@@ -1,4 +1,8 @@
 const DepartmentModel = require("../../database/models/department");
+const {
+  createDepartmentSchema,
+  updateDepartmentSchema,
+} = require("../../validation/admin/department");
 
 // Get all departments
 const getAllDepartment = async (req, res) => {
@@ -13,6 +17,10 @@ const getAllDepartment = async (req, res) => {
 // Create a new department
 const createDepartment = async (req, res) => {
   try {
+    const { error } = createDepartmentSchema.validate(req.body);
+    if (error) {
+      return res.status(400).json({ message: error.message });
+    }
     const { name, description } = req.body;
 
     if ("id" in req.body) {
@@ -54,6 +62,10 @@ const createDepartment = async (req, res) => {
 // Update a department by ID
 const updateDepartment = async (req, res) => {
   try {
+    const { error } = updateDepartmentSchema.validate(req.body);
+    if (error) {
+      return res.status(400).json({ message: error.message });
+    }
     const { id } = req.params;
     const { name, description } = req.body;
 

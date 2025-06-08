@@ -1,5 +1,9 @@
 const { AdminModel } = require("../../database/models/admin");
 const bcrypt = require("bcrypt");
+const {
+  createAdminSchema,
+  updateAdminSchema,
+} = require("../../validation/admin/admin");
 
 const getAdminList = async (req, res) => {
   try {
@@ -19,6 +23,18 @@ const getAdminList = async (req, res) => {
 
 const createAdmin = async (req, res) => {
   try {
+    const { error, value } = createAdminSchema.validate(req.body, {
+      abortEarly: false,
+    });
+
+    if (error) {
+      return res.status(400).json({
+        success: false,
+        message: "Validation failed",
+        errors: error.details.map((detail) => detail.message),
+      });
+    }
+
     const {
       first_name,
       last_name,
@@ -28,26 +44,12 @@ const createAdmin = async (req, res) => {
       birthday_date,
       national_id,
       phone_number,
-    } = req.body;
-
-    if (
-      !first_name ||
-      !last_name ||
-      !email ||
-      !password ||
-      !role ||
-      !birthday_date ||
-      !national_id ||
-      !phone_number
-    ) {
-      return res
-        .status(400)
-        .json({ success: false, message: "All fields are required" });
-    }
+    } = value;
 
     const existingAdmin = await AdminModel.findOne({
       $or: [{ email }, { national_id }],
     });
+
     if (existingAdmin) {
       return res.status(400).json({
         success: false,
@@ -55,7 +57,6 @@ const createAdmin = async (req, res) => {
       });
     }
 
-    // Create new admin
     const newAdmin = new AdminModel({
       first_name,
       last_name,
@@ -68,6 +69,7 @@ const createAdmin = async (req, res) => {
     });
 
     await newAdmin.save();
+
     res.status(201).json({
       success: true,
       message: "Admin created successfully",
@@ -86,28 +88,41 @@ const updateAdmin = async (req, res) => {
   try {
     const { id } = req.params;
 
-    // Check if admin exists
+    const { error, value } = updateAdminSchema.validate(req.body, {
+      abortEarly: false,
+      stripUnknown: true,
+    });
+
+    if (error) {
+      return res.status(400).json({
+        success: false,
+        message: "Validation failed",
+        errors: error.details.map((detail) => detail.message),
+      });
+    }
+
     const existingAdmin = await AdminModel.findById(id);
     if (!existingAdmin) {
       return res.status(404).json({ message: "Admin not found" });
     }
 
-    // Hash new password if updated
-    if (req.body.password) {
-      req.body.password = await bcrypt.hash(req.body.password, 10);
+    if (value.password) {
+      value.password = await bcrypt.hash(value.password, 10);
     }
 
-    const updatedAdmin = await AdminModel.findByIdAndUpdate(id, req.body, {
+    const updatedAdmin = await AdminModel.findByIdAndUpdate(id, value, {
       new: true,
     });
 
-    res
-      .status(200)
-      .json({ message: "Admin updated successfully", admin: updatedAdmin });
+    res.status(200).json({
+      message: "Admin updated successfully",
+      admin: updatedAdmin,
+    });
   } catch (error) {
-    res
-      .status(500)
-      .json({ message: "Error updating admin", error: error.message });
+    res.status(500).json({
+      message: "Error updating admin",
+      error: error.message,
+    });
   }
 };
 

@@ -97,87 +97,51 @@ const handleSignature = async (req, res) => {
     let updatedSignature;
 
     // Handle document signing
-    if (status === "Signed") {
-      // Handle base64 signature data
-      if (
-        uploaded_document_url &&
-        uploaded_document_url.startsWith("data:image")
-      ) {
-        try {
-          const base64Data = uploaded_document_url.replace(
-            /^data:image\/\w+;base64,/,
-            ""
-          );
-          const buffer = Buffer.from(base64Data, "base64");
-          const filename = `signature-${id}-${Date.now()}.png`;
-          const filePath = path.join(
-            __dirname,
-            "../../uploads/signatures",
-            filename
-          );
+    if (
+      (uploaded_document_url &&
+        uploaded_document_url.startsWith("data:image")) ||
+      req.body.signature_data
+    ) {
+      try {
+        const base64Data = req.body.signature_data
+          ? req.body.signature_data
+          : uploaded_document_url.replace(/^data:image\/\w+;base64,/, "");
 
-          // Ensure directory exists
-          await fs.promises.mkdir(path.dirname(filePath), { recursive: true });
-          await fs.promises.writeFile(filePath, buffer);
+        const buffer = Buffer.from(base64Data, "base64");
+        const filename = `signature-${id}-${Date.now()}.png`;
+        const filePath = path.join(
+          __dirname,
+          "../../uploads/signatures",
+          filename
+        );
 
-          // Clean up old file if it exists
-          if (
-            signature.signed_document &&
-            (await fileExists(signature.signed_document))
-          ) {
-            await fs.promises.unlink(signature.signed_document);
-          }
+        await fs.promises.mkdir(path.dirname(filePath), { recursive: true });
+        await fs.promises.writeFile(filePath, buffer);
 
-          updatedSignature = await eSignatureModel.findByIdAndUpdate(
-            signature._id,
-            {
-              signed_document: filePath,
-              status,
-            },
-            { new: true }
-          );
-        } catch (error) {
-          return res.status(400).json({
-            success: false,
-            message: "Failed to process signature image",
-            error: error.message,
-          });
+        if (
+          signature.signed_document &&
+          (await fileExists(signature.signed_document))
+        ) {
+          await fs.promises.unlink(signature.signed_document);
         }
-      }
-      // Handle file upload
-      else if (req.file) {
-        try {
-          // Clean up old file if it exists
-          if (
-            signature.signed_document &&
-            (await fileExists(signature.signed_document))
-          ) {
-            await fs.promises.unlink(signature.signed_document);
-          }
 
-          updatedSignature = await eSignatureModel.findByIdAndUpdate(
-            signature._id,
-            {
-              signed_document: req.file.path,
-              status,
-            },
-            { new: true }
-          );
-        } catch (error) {
-          return res.status(400).json({
-            success: false,
-            message: "Failed to process uploaded file",
-            error: error.message,
-          });
-        }
-      } else {
+        updatedSignature = await eSignatureModel.findByIdAndUpdate(
+          signature._id,
+          {
+            signed_document: filePath,
+            status,
+          },
+          { new: true }
+        );
+      } catch (error) {
         return res.status(400).json({
           success: false,
-          message:
-            "Valid signature data (base64 image or file upload) is required for signing",
+          message: "Failed to process signature image",
+          error: error.message,
         });
       }
     }
+
     // Handle rejection
     else if (status === "Rejected") {
       if (!rejection_reason) {
