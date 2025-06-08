@@ -5,41 +5,42 @@ const { AdminRole } = require("../../database/models/admin");
 const {
   listChatQuestions,
   addChatQuestion,
+  updateChatQuestion,
   deleteChatQuestion,
 } = require("../../controller/admin/chat");
 
 const router = express.Router();
 
 router.get(
-  "/adminList",
+  "/Chat-List",
   // adminIsAuth,
   // changeLanguage,
   // adminAllowedTo([AdminRole.SUPER_ADMIN]),
-  getAdminList
+  listChatQuestions
 );
 
 router.post(
-  "/create-admin",
+  "/create-Q&A",
   // adminIsAuth,
   // changeLanguage,
   // adminAllowedTo([AdminRole.SUPER_ADMIN]),
-  createAdmin
+  addChatQuestion
 );
 
 router.put(
-  "/update-admin/:id",
+  "/update-Q&A/:id",
   // adminIsAuth,
   // changeLanguage,
   // adminAllowedTo([AdminRole.SUPER_ADMIN]),
-  updateAdmin
+  updateChatQuestion
 );
 
 router.delete(
-  "/delete-admin/:id",
+  "/delete-Q&A/:id",
   // adminIsAuth,
   // changeLanguage,
   // adminAllowedTo([AdminRole.SUPER_ADMIN]),
-  deleteAdmin
+  deleteChatQuestion
 );
 
 module.exports = router;

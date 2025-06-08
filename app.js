@@ -17,6 +17,7 @@ const NotificationRoutes = require("./src/routes/admin/notification");
 const ReminderRoutes = require("./src/routes/admin/reminder");
 const paymentRoutes = require("./src/routes/admin/payment");
 const ProfileRoutes = require("./src/routes/admin/getme");
+const ChatRoutes = require("./src/routes/admin/chat");
 const digitalwalletRoutes = require("./src/routes/admin/digitalwallet");
 const pointRoutes = require("./src/routes/admin/point");
 const citizenAuthRoutes = require("./src/routes/citizen/auth");
@@ -34,7 +35,7 @@ const citizencalendarServiceRoutes = require("./src/routes/citizen/CalendarServi
 const citizenNewsRoutes = require("./src/routes/citizen/news"); // Import the service
 const citizenCountsRoutes = require("./src/routes/citizen/counts"); // Import the service
 const citizenAccountRoutes = require("./src/routes/citizen/account");
-
+const citizenChatRoutes = require("./src/routes/citizen/chat");
 
 function initRoutes(app) {
   // Admin
@@ -52,6 +53,7 @@ function initRoutes(app) {
   app.use("/api/admin", ProfileRoutes);
   app.use("/api/admin", paymentRoutes);
   app.use("/api/admin", ReminderRoutes);
+  app.use("/api/admin", ChatRoutes);
 
   // Citizen
   app.use("/api/citizen", citizenAuthRoutes);
@@ -69,7 +71,7 @@ function initRoutes(app) {
   app.use("/api/citizen", citizenNewsRoutes);
   app.use("/api/citizen", citizenCountsRoutes);
   app.use("/api/citizen", citizenAccountRoutes);
-
+  app.use("/api/citizen", citizenChatRoutes);
 
   // Test
   app.get("/api/test", (req, res) => {
