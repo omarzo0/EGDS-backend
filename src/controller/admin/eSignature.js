@@ -74,8 +74,8 @@ const getSignatureListById = async (req, res) => {
 
 const handleSignature = async (req, res) => {
   try {
-    const { status, uploaded_document_url } = req.body;
-    const { rejection_reason } = req.body; // Separate line since it's optional
+    const { uploaded_document_url } = req.body;
+    const { rejection_reason } = req.body; // Optional (only for rejections)
     const id = req.params.id || req.body.document_id;
 
     if (!id) {
@@ -96,10 +96,9 @@ const handleSignature = async (req, res) => {
 
     let updatedSignature;
 
-    // Handle document signing
+    // Handle document signing (if signature data is provided)
     if (
-      (uploaded_document_url &&
-        uploaded_document_url.startsWith("data:image")) ||
+      (uploaded_document_url && uploaded_document_url.startsWith("data:image")) ||
       req.body.signature_data
     ) {
       try {
@@ -118,6 +117,7 @@ const handleSignature = async (req, res) => {
         await fs.promises.mkdir(path.dirname(filePath), { recursive: true });
         await fs.promises.writeFile(filePath, buffer);
 
+        // Delete old signed document if it exists
         if (
           signature.signed_document &&
           (await fileExists(signature.signed_document))
@@ -125,11 +125,13 @@ const handleSignature = async (req, res) => {
           await fs.promises.unlink(signature.signed_document);
         }
 
+        // Update status to "Signed" automatically
         updatedSignature = await eSignatureModel.findByIdAndUpdate(
           signature._id,
           {
             signed_document: filePath,
-            status,
+            status: "Signed", // Auto-set status
+            signed_date: new Date(), // Optional: Record signing time
           },
           { new: true }
         );
@@ -142,27 +144,23 @@ const handleSignature = async (req, res) => {
       }
     }
 
-    // Handle rejection
-    else if (status === "Rejected") {
-      if (!rejection_reason) {
-        return res.status(400).json({
-          success: false,
-          message: "Rejection reason is required when rejecting",
-        });
-      }
-
+    // Handle rejection (if rejection_reason is provided)
+    else if (rejection_reason) {
       updatedSignature = await eSignatureModel.findByIdAndUpdate(
         signature._id,
         {
-          status,
+          status: "Rejected",
           rejection_reason,
         },
         { new: true }
       );
-    } else {
+    }
+
+    // No valid action (neither signature nor rejection)
+    else {
       return res.status(400).json({
         success: false,
-        message: "Invalid status provided",
+        message: "Either signature data or rejection reason must be provided",
       });
     }
 
@@ -266,9 +264,9 @@ const getSignatureCounts = async (req, res) => {
     });
   }
 };
+
+
 const downloadEpaper = async (req, res) => {
-  const contentType = mime.lookup(filePath) || "application/octet-stream";
-  res.setHeader("Content-Type", contentType);
   try {
     const { signed_id } = req.params;
 
@@ -278,51 +276,45 @@ const downloadEpaper = async (req, res) => {
       .populate("department_id", "name");
 
     if (!document) {
-      return res.status(404).json({
-        success: false,
-        message: "Document not found",
+      return res.status(404).json({ 
+        success: false, 
+        message: "Document not found" 
       });
     }
 
-    // --- DOWNLOAD LOGIC (WORKS FOR ANY STATUS) ---
-    if (req.query.download) {
-      const filePath = document.uploaded_document; // ← Always use uploaded document
-
-      if (!filePath) {
+    if (req.query.download && document.status.toLowerCase() === 'signed') {
+      if (!document.signed_document) {
         return res.status(404).json({
           success: false,
-          message: "No uploaded document file found",
+          message: "Signed document not found",
         });
       }
 
+      const filePath = document.signed_document;
       const ext = path.extname(filePath);
-      const fileName = `${document.service_id?.name || "document"}_${
-        document._id
-      }${ext}`;
+      const fileName = `${document.service_id?.name || 'document'}_${document._id}${ext}`;
 
-      res.setHeader(
-        "Content-Disposition",
-        `attachment; filename="${fileName}"`
-      );
-      res.setHeader("Content-Type", contentType);
+      res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
 
-      if (filePath.startsWith("http")) {
+      if (filePath.startsWith('http')) {
+        // Remote file (optional fallback)
         const response = await fetch(filePath);
         if (!response.ok) {
           return res.status(500).json({
             success: false,
-            message: "Failed to fetch remote document",
+            message: "Failed to fetch remote document.",
           });
         }
         const fileBuffer = await response.buffer();
         return res.send(fileBuffer);
       } else {
+        // Local file
         const absolutePath = path.resolve(filePath);
         return res.download(absolutePath);
       }
     }
 
-    // --- METADATA RESPONSE (NON-DOWNLOAD REQUEST) ---
+    // Not a download request – return metadata
     const response = {
       success: true,
       message: "Document found",
@@ -341,9 +333,10 @@ const downloadEpaper = async (req, res) => {
         rejection_reason: document.rejection_reason,
         last_update: document.updatedAt,
         createdAt: document.createdAt,
-        // Always include download link (regardless of status)
-        download_link: `${req.originalUrl.split("?")[0]}?download=true`,
-      },
+        download_link: document.status.toLowerCase() === 'signed' 
+          ? `${req.originalUrl.split('?')[0]}?download=true` 
+          : null,
+      }
     };
 
     return res.status(200).json(response);
