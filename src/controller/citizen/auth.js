@@ -16,6 +16,8 @@ require("dotenv").config();
 function generateOTP() {
   return Math.floor(100000 + Math.random() * 900000).toString();
 }
+
+
 const login = async (req, res) => {
   try {
     const { national_id, password } = req.body;
@@ -99,14 +101,17 @@ const login = async (req, res) => {
       }
     }
 
+    // Generic error message for security
+    const invalidCredentialsMsg = "Invalid national ID or password";
+    
     if (!matchedRegister || !matchedCitizen) {
-      throw new ApiError(HttpStatus.Unauthorized, "Invalid credentials");
+      throw new ApiError(HttpStatus.Unauthorized, invalidCredentialsMsg);
     }
 
     // Verify password
     const isPasswordValid = await matchedRegister.matchPassword(password);
     if (!isPasswordValid) {
-      throw new ApiError(HttpStatus.Unauthorized, "Invalid credentials");
+      throw new ApiError(HttpStatus.Unauthorized, invalidCredentialsMsg);
     }
 
     // Generate token
@@ -135,12 +140,18 @@ const login = async (req, res) => {
     let statusCode = err.statusCode || HttpStatus.InternalServerError;
     let message = err.message || "Something went wrong";
 
+    // Override message for 401 errors
+    if (statusCode === HttpStatus.Unauthorized) {
+      message = "Invalid national ID or password";
+    }
+
     return res.status(statusCode).json({
       status: "error",
       error: { code: statusCode, message },
     });
   }
 };
+
 
 const register = async (req, res) => {
   try {
