@@ -39,6 +39,7 @@
     "otp-generator": "^4.0.1",
     "pdf-lib": "^1.17.1",
     "pdfkit": "^0.16.0",
+    "python-shell": "^5.0.0",
     "request": "^2.88.2",
     "sib-api-v3-sdk": "^8.5.0",
     "speakeasy": "^2.0.0",
