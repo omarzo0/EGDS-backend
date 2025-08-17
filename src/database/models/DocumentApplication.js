@@ -12,7 +12,7 @@ const documentApplicationSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "Department",
       required: true,
-      index: true, // Indexing for performance
+      index: true,
     },
     service_id: {
       type: mongoose.Schema.Types.ObjectId,
@@ -20,25 +20,30 @@ const documentApplicationSchema = new mongoose.Schema(
       required: true,
       index: true,
     },
-    
+
     preferred_contact_method: {
       type: String,
       enum: ["email", "phone"],
       required: true,
       default: "phone",
     },
-    
+
     approval_date: { type: Date },
     status: {
       type: String,
       enum: ["Pending", "Reviewed", "Approved", "Rejected"],
       default: "Pending",
     },
+    application_type: {
+      type: String,
+      enum: ["New", "Renewal", "Lost Replacement"],
+      required: true,
+    },
     rejection_reason: { type: String },
     amount: { type: Number, required: true },
     issued_by: { type: String },
-    issued_date: { type : Date },
-    notes:{type: String},
+    issued_date: { type: Date },
+    notes: { type: String },
   },
   { timestamps: true }
 );

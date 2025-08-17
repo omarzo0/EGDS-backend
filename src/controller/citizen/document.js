@@ -64,9 +64,29 @@ const getDocumentsByCitizenId = async (req, res) => {
 // Citizen applies for a document
 const createDocument = async (req, res) => {
   try {
-    const { citizen_id, serviceid, preferred_contact_method, amount } = req.body;
+    const {
+      citizen_id,
+      serviceid,
+      preferred_contact_method,
+      amount,
+      application_type,
+    } = req.body;
 
-    // Check if the department exists by name
+    // Validate required fields
+    if (
+      !citizen_id ||
+      !serviceid ||
+      !preferred_contact_method ||
+      !amount ||
+      !application_type
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing required fields",
+      });
+    }
+
+    // Check if the service exists by ID
     const service = await ServiceModel.findById(serviceid);
     if (!service) {
       return res.status(404).json({
@@ -75,7 +95,7 @@ const createDocument = async (req, res) => {
       });
     }
 
-    // Check if the department exists by name
+    // Check if the citizen exists by ID
     const citizen = await CitizenModel.findById(citizen_id);
     if (!citizen) {
       return res.status(404).json({
@@ -84,7 +104,6 @@ const createDocument = async (req, res) => {
         details: `Tried finding with: ${citizen_id}`,
       });
     }
-    
 
     // Generate document number
     const documentCount = await DocumentApplicationModel.countDocuments();
@@ -92,14 +111,16 @@ const createDocument = async (req, res) => {
       .toString()
       .padStart(6, "0")}`;
 
+    // Create the document application
     const newDocument = await DocumentApplicationModel.create({
       document_number,
       citizen_id: citizen._id, // Always use the _id for reference
-      department_id: service.department_id,
+      department_id: service.department_id, // Ensure department_id exists in the service
       service_id: service._id,
       preferred_contact_method,
       amount,
       status: "Pending",
+      application_type, // Adding the application type field
       issued_by: null,
       notes: null,
       approval_date: null,

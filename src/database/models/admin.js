@@ -7,7 +7,6 @@ const AdminRole = {
   OFFICER: "officer",
 };
 
-// Admin Schema
 const adminSchema = new mongoose.Schema(
   {
     first_name: { type: String, required: true },
