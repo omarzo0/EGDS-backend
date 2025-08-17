@@ -13,7 +13,7 @@ const router = express.Router();
 
 router.get(
   "/adminList",
-  // adminIsAuth,
+  adminIsAuth,
   // changeLanguage,
   // adminAllowedTo([AdminRole.SUPER_ADMIN]),
   getAdminList
