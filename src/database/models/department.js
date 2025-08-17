@@ -10,10 +10,10 @@ const departmentSchema = new mongoose.Schema(
 );
 
 departmentSchema.virtual("services", {
-  ref: "Service", // Reference the Service model
-  localField: "_id", // Field in the Department model
-  foreignField: "department_id", // Field in the Service model
-  justOne: false, // Return an array of services
+  ref: "Service",
+  localField: "_id",
+  foreignField: "department_id",
+  justOne: false,
 });
 
 const DepartmentModel =

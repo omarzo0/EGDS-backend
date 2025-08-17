@@ -131,7 +131,7 @@ const createDigitalDocument = async (req, res) => {
 
 const deleteDigitalDocument = async (req, res) => {
   try {
-    const { document_id } = req.params; // Changed from national_id to document_id
+    const { document_id } = req.params;
 
     if (!mongoose.Types.ObjectId.isValid(document_id)) {
       return res.status(400).json({
